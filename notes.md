@@ -6,8 +6,13 @@ User: bogejib211@colimarl.com
 P: TestingStuff69!
 
 [Log in using requests in python](https://stackoverflow.com/questions/11892729/how-to-log-in-to-a-website-using-pythons-requests-module)
+[Another example, specifically regarding __RequestVerificationToken](https://stackoverflow.com/questions/51430765/login-to-website-using-python-and-requestverificationtoken)
 
 Will need an option to specify to get consecutive court in each hour interval. Otherwise it just tries to get 1 at all.  
+
+# Loading booking page with parameters
+1) Create the parameters json
+2) put it into the request... the page itself is a get request, but the added filters are shown as a post. 
 
 # Getting court urls
 I'm thinking of having the program do a get request for the booking page. Then (or maybe you can just start with this) do a post request for your desired date and times. 
