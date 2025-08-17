@@ -1,7 +1,7 @@
 {
-    "Registration URL Connected To PickleBall Courts" : "https://cityofhamilton.perfectmind.com/39117/MemberRegistration/MemberSignIn?returnUrl=https%3a%2f%2fcityofhamilton.perfectmind.com%2f39117%2fClients%2fBookMe4BookingPages%2fClasses%3fcalendarId%3dbaecc0a4-1ba9-4151-9e2c-45f21f60bbb6%26widgetId%3dd63d746c-8862-4ca9-8b3c-5f79e841bba7%26embed%3dFalse%26singleCalendarWidget%3dtrue",
-    "Email Field" : "textBoxUsername",
-    "Password Field" : "textBoxPassword",
+    "Login URL" : "https://cityofhamilton.perfectmind.com/39117/MemberRegistration/MemberSignIn?returnUrl=https%3a%2f%2fcityofhamilton.perfectmind.com%2f39117%2fClients%2fBookMe4BookingPages%2fClasses%3fcalendarId%3dbaecc0a4-1ba9-4151-9e2c-45f21f60bbb6%26widgetId%3dd63d746c-8862-4ca9-8b3c-5f79e841bba7%26embed%3dFalse%26singleCalendarWidget%3dtrue",
+    "Email Field Name" : "username",
+    "Password Field Name" : "password",
     "User Email" : "bogejib211@colimarl.com",
     "User Password" : "TestingStuff69!",
 
@@ -29,19 +29,6 @@
         "values[3][Value2]": "1188",
         "values[3][ValueKind]": "0",
         "__RequestVerificationToken": "otIxY-tukjBiMK42z96z3ISryro1txRVw_cpP0k-e15DbUAvIHJwX2QAMq40fP_iblPdwjJUBhfzn7CkvOmWY0AOT0-XZmi52Halk3aU7ISWw3526EfRpjrjKvOANuBJ8dlgkunrAcnuadzDuPhmR9dK3mY1"
-    },
-
-    "Liability Request" : {
-        "FormId": "fdafa815-fabd-45bc-9d9c-29ea68aeab3d",
-        "ContactId": "2334376b-96f7-4fce-af55-d7f8558287df",
-        "EventId": "e75c4e32-3d03-a96c-8291-8ac7d43348d5",
-        "EventObjectId": "6a293c5d-5ea0-d5b9-2ae2-f91bc2069f1b",
-        "EventLocationId": "b83b0db1-8578-4056-a797-f24a053abd50",
-        "CheckoutItemId": "",
-        "contactIds": "",
-        "qid_ba52b933-cd1f-4010-bc5d-9e1d00ca3466_2334376b-96f7-4fce-af55-d7f8558287df_e75c4e32-3d03-a96c-8291-8ac7d43348d5": "Agreed",
-        "qid_bb812e6a-ea9a-4786-9fc6-2f6485359389_2334376b-96f7-4fce-af55-d7f8558287df_e75c4e32-3d03-a96c-8291-8ac7d43348d5": "",
-        "__RequestVerificationToken": "JNfSGAEeEzrUjL0swM2ocw1TA5K1FsxQ8Ywfo6kexmyJCspL0n5cj7loKCGMij82p_C_Gg7lvcOH5BK33M8BhZj8ujH40cu41Byh4AsUMGlHdRUWVbKjFpImEs4ul3dYzm6KOn5gVd-_BGbnEN6_gLcIM7o1"
     },
 
     "Try Add Item to Cart" : {
