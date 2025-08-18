@@ -1,7 +1,8 @@
 Only the eventID is necessary for getting to the booking screen.
 Sample URL: https://cityofhamilton.perfectmind.com/Clients/BookMe4EventParticipants?eventId=a2eeaf37-c6ec-a772-ae6e-c4b3c4eddfa2
-A bit at the start before the ? is removed, and everything except the event ID is removed after the ?
-aeaf26db-63eb-42e3-ab85-a54bd2bda41c&occurrenceDate=20250820
+All we need is the eventId, which is the classId in the information page for the booking. Plug and chug.
+
+
 User: bogejib211@colimarl.com
 P: TestingStuff69!
 
