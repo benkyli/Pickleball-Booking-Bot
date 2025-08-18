@@ -1,7 +1,7 @@
 Only the eventID is necessary for getting to the booking screen.
 Sample URL: https://cityofhamilton.perfectmind.com/Clients/BookMe4EventParticipants?eventId=a2eeaf37-c6ec-a772-ae6e-c4b3c4eddfa2
 A bit at the start before the ? is removed, and everything except the event ID is removed after the ?
-
+aeaf26db-63eb-42e3-ab85-a54bd2bda41c&occurrenceDate=20250820
 User: bogejib211@colimarl.com
 P: TestingStuff69!
 
@@ -28,3 +28,6 @@ Can test that by hyperlinking the book button when it says full. Will need 2 acc
 also need to check to see if a single account have hold multiple courts at once. 
 
 # If the holding system works. Essentially just have multiple clients trying to click the book button on multiple courts. Will need to check if a user can hold more than 1 court, and if the court is actually held by the user. 
+
+# Initial solution
+- When you request an open landing page, the system holds it for you and locks out other users for "5 minutes" (feels like 3). However, there is some kind of problem occurring after doing this with the bot. It instead holds the spot, but doesn't assign it to the user. So when trying to manually checkout, there is no option even though the current user is definitely the one holding the spot. May need to change the header? Not sure how to do this part. May need to fully automate the entire checkout process from the request session itself. Would likely be better, but I wanted to try brute forcing quickly. 
