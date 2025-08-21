@@ -32,3 +32,13 @@ also need to check to see if a single account have hold multiple courts at once.
 
 # Initial solution
 - When you request an open landing page, the system holds it for you and locks out other users for "5 minutes" (feels like 3). However, there is some kind of problem occurring after doing this with the bot. It instead holds the spot, but doesn't assign it to the user. So when trying to manually checkout, there is no option even though the current user is definitely the one holding the spot. May need to change the header? Not sure how to do this part. May need to fully automate the entire checkout process from the request session itself. Would likely be better, but I wanted to try brute forcing quickly. 
+
+
+# make post for booking page
+1) Get the template for the post from data
+2) Replace the start and end date-times with your own desired parameters
+3) plug this into a post request with the page link as data?
+1.99) May need to swap request's __RequestVerificationToken with your current cookie's
+2) 
+
+

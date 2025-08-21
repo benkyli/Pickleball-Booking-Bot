@@ -10,7 +10,12 @@
     "Booking Page URL" : "https://cityofhamilton.perfectmind.com/39117/Clients/BookMe4BookingPages/Classes?calendarId=baecc0a4-1ba9-4151-9e2c-45f21f60bbb6&widgetId=d63d746c-8862-4ca9-8b3c-5f79e841bba7&embed=False&singleCalendarWidget=true",
     "Clean Booking Page URL" : "https://cityofhamilton.perfectmind.com/Clients/BookMe4BookingPages/Classes?calendarId=baecc0a4-1ba9-4151-9e2c-45f21f60bbb6&widgetId=d63d746c-8862-4ca9-8b3c-5f79e841bba7",
 
-    "Open Courts Request Params" : {
+    "Start Date Key" : "values[1][Value]",
+    "End Date Key" : "values[1][Value2]",
+    "Start Time Key" : "values[2][Value]",
+    "End Time Key" : "values[2][Value2]",
+
+    "Open Courts Request Data" : {
         "calendarId": "baecc0a4-1ba9-4151-9e2c-45f21f60bbb6",
         "widgetId": "d63d746c-8862-4ca9-8b3c-5f79e841bba7",
         "page": "0",
@@ -19,12 +24,12 @@
         "values[0][Value2]": "",
         "values[0][ValueKind]": "9",
         "values[1][Name]": "Date+Range",
-        "values[1][Value]": "2025-08-15T00:00:00.000Z",
+        "values[1][Value]": "2025-08-23T00:00:00.000Z",
         "values[1][Value2]": "2026-02-11T00:00:00.000Z",
         "values[1][ValueKind]": "6",
         "values[2][Name]": "Time+Range",
-        "values[2][Value]": "2025-08-15T17:30:00.000Z",
-        "values[2][Value2]": "2025-08-15T20:30:00.000Z",
+        "values[2][Value]": "2025-08-21T00:00:00.000Z",
+        "values[2][Value2]": "2025-08-21T00:00:00.000Z",
         "values[2][ValueKind]": "7",
         "values[3][Name]": "Age",
         "values[3][Value]": "0",
