@@ -2,7 +2,6 @@ import requests
 import json
 from bs4 import BeautifulSoup
 from selenium import webdriver
-import datetime
 from seleniumrequests import Firefox
 
 def createDateTime(year, month, day, time="00:00"):
@@ -15,6 +14,45 @@ def getLandingPage():
 def printDic(dic):
     for key in dic:
         print(key, ":", dic[key])
+
+def getUserVerificationToken(url):
+    prebook = sess.get(url=url)
+    soup = BeautifulSoup(prebook.text, "html.parser")
+    requestVerificationToken = soup.find("input", {'name': '__RequestVerificationToken'})['value']
+    return requestVerificationToken
+
+def getEventIds():
+    # Prepare date and time values
+    year = "2025"
+    month = "08"
+    day = "24"
+    startTime = "17:30"
+    endTime = "20:30"
+
+    # Set date-time parameters in dictionary
+    date = createDateTime(year=year, month=month, day=day, time="00:00") # time doesn't matter for date parameter
+    startTime = createDateTime(year=year, month=month, day=day, time=startTime) # day doesn't matter for the time parameter
+    endTime = createDateTime(year=year, month=month, day=day, time=endTime)
+
+    dateTimeData = data["DateTime Payload Form Encoded"]
+    dateTimeData[data["Start Date Key"]] = date # start date and end date are the same because bookings are always taken 2 days in advance, so you don't get opportunities to do other days.
+    dateTimeData[data["End Date Key"]] = date
+    dateTimeData[data["Start Time Key"]] = startTime
+    dateTimeData[data["End Time Key"]] = endTime
+
+    # Get the updated Page
+    bookingPage = requests.post(url=data["Booking URL Updated"], data=dateTimeData)
+
+    courts = bookingPage.json()["classes"]
+    # Get event IDs
+    eventIds = []
+    for court in courts:
+        eventIds.append(court["EventId"])
+
+    print(eventIds)
+    print(len(eventIds))
+    return eventIds
+
 
 with open('data.json') as jsonData:
     data = json.load(jsonData)
@@ -29,43 +67,8 @@ headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:142.0) Gecko/20100101 Firefox/142.0'
 }
 
-todayDay = f"{datetime.datetime.today().day:02}" # turn date integer into 2 digit string with leading 0's if necessary
-
 with requests.Session() as sess:
-    sess.headers.update(headers)
-    sess.post(url=data["Login URL"], data=loginPayload)
-
-    # Prepare date and time request data 
-    year = "2025"
-    month = "08"
-    day = "24"
-    startTime = "17:30"
-    endTime = "20:30"
-
-    # Set time parameters in dictionary
-    startDate = createDateTime(year=year, month=month, day=day, time="00:00")
-    endDate = startDate
-    startTime = createDateTime(year=year, month=month, day=todayDay, time=startTime)
-    endTime = createDateTime(year=year, month=month, day=todayDay, time=endTime)
-
-    dateTimeData = data["DateTime Payload Form Encoded"]
-    dateTimeData[data["Start Date Key"]] = startDate
-    dateTimeData[data["End Date Key"]] = startDate
-    dateTimeData[data["Start Time Key"]] = startTime
-    dateTimeData[data["End Time Key"]] = endTime
-
-    # Get default page's verification token
-    prebook = sess.get(url=data["Booking Page URL"])
-    soup = BeautifulSoup(prebook.text, "html.parser")
-    requestVerificationToken = soup.find("input", {'name': '__RequestVerificationToken'})['value']
-    dateTimeData["__RequestVerificationToken"] = requestVerificationToken
-
-    # Get the updated Page
-    bookingPage = sess.post(url=data["Booking URL Updated"], data=dateTimeData)
-   
-    courts = bookingPage.json()["classes"]
-    print(len(courts))
-    
+    eventIds = getEventIds()
     
 
 
