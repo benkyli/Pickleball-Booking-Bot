@@ -2,19 +2,19 @@ import requests
 import json
 from bs4 import BeautifulSoup
 from selenium import webdriver
+import datetime
+from seleniumrequests import Firefox
 
 def createDateTime(year, month, day, time="00:00"):
     return f"{year}-{month}-{day}T{time}:00.000Z"
-
-# This probably doesn't need to be a function
-def getBookingPage(url, dateTimeData):
-    resp = requests.post(url, data=dateTimeData) 
-    return resp
 
 # This would loop through the data from the booking page to get all the landing pages. Maybe could also get the holding pages, but could also get those in a different function.
 def getLandingPage():
     return
 
+def printDic(dic):
+    for key in dic:
+        print(key, ":", dic[key])
 
 with open('data.json') as jsonData:
     data = json.load(jsonData)
@@ -26,31 +26,48 @@ loginPayload = {
 
 # needed if we want to switch to selenium for manual finish after. Automatic finish might need mix of beautifulSoup and requests instead. 
 headers = {
-"User-Agent":
-    "Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36"
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:142.0) Gecko/20100101 Firefox/142.0'
 }
 
-with requests.Session() as sess:
-    # sess.headers.update(headers)
-    # login = sess.post(url=data["Login URL"], data=loginPayload)
+todayDay = f"{datetime.datetime.today().day:02}" # turn date integer into 2 digit string with leading 0's if necessary
 
-    # Set date and time request data 
+with requests.Session() as sess:
+    sess.headers.update(headers)
+    sess.post(url=data["Login URL"], data=loginPayload)
+
+    # Prepare date and time request data 
     year = "2025"
     month = "08"
-    day = "23"
-    startTime = "00:00"
-    endTime = "12:30"
+    day = "24"
+    startTime = "17:30"
+    endTime = "20:30"
 
-    dateTimeData = data["Open Courts Request Data"]
-    dateTimeData["Start Date Key"] = createDateTime(year=year, month=month, day=day, time="00:00")
-    dateTimeData["End Date Key"] = dateTimeData["Start Date Key"]
+    # Set time parameters in dictionary
+    startDate = createDateTime(year=year, month=month, day=day, time="00:00")
+    endDate = startDate
+    startTime = createDateTime(year=year, month=month, day=todayDay, time=startTime)
+    endTime = createDateTime(year=year, month=month, day=todayDay, time=endTime)
 
-    # might need to change so the date part is current day. Not sure. Need to check what the responses are in the html. 
-    dateTimeData["Start Time Key"] = createDateTime(year=year, month=month, day=day, time=startTime)
-    dateTimeData["End Time Key"] = createDateTime(year=year, month=month, day=day, time=endTime)
+    dateTimeData = data["DateTime Payload Form Encoded"]
+    dateTimeData[data["Start Date Key"]] = startDate
+    dateTimeData[data["End Date Key"]] = startDate
+    dateTimeData[data["Start Time Key"]] = startTime
+    dateTimeData[data["End Time Key"]] = endTime
+
+    # Get default page's verification token
+    prebook = sess.get(url=data["Booking Page URL"])
+    soup = BeautifulSoup(prebook.text, "html.parser")
+    requestVerificationToken = soup.find("input", {'name': '__RequestVerificationToken'})['value']
+    dateTimeData["__RequestVerificationToken"] = requestVerificationToken
+
+    # Get the updated Page
+    bookingPage = sess.post(url=data["Booking URL Updated"], data=dateTimeData)
+   
+    courts = bookingPage.json()["classes"]
+    print(len(courts))
     
-    bookingPage = sess.post(url=data["Clean Booking Page URL"], data=dateTimeData)
-    soup = BeautifulSoup(bookingPage.content, "html.parser")
+    
+
 
     # Get all elements for given days and times. 
 
