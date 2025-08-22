@@ -7,21 +7,19 @@ from seleniumrequests import Firefox
 def createDateTime(year, month, day, time="00:00"):
     return f"{year}-{month}-{day}T{time}:00.000Z"
 
-# This would loop through the data from the booking page to get all the landing pages. Maybe could also get the holding pages, but could also get those in a different function.
-def getLandingPage():
-    return
-
+# Definitely delete later
 def printDic(dic):
     for key in dic:
         print(key, ":", dic[key])
 
+# May not be necessary; perhaps delete later
 def getUserVerificationToken(url):
     prebook = sess.get(url=url)
     soup = BeautifulSoup(prebook.text, "html.parser")
     requestVerificationToken = soup.find("input", {'name': '__RequestVerificationToken'})['value']
     return requestVerificationToken
 
-def getEventIds():
+def getEventURLs():
     # Prepare date and time values
     year = "2025"
     month = "08"
@@ -42,17 +40,17 @@ def getEventIds():
 
     # Get the updated Page
     bookingPage = requests.post(url=data["Booking URL Updated"], data=dateTimeData)
-
     courts = bookingPage.json()["classes"]
+
     # Get event IDs
     eventIds = []
     for court in courts:
         eventIds.append(court["EventId"])
 
-    print(eventIds)
-    print(len(eventIds))
-    return eventIds
-
+    # convert to urls
+    eventURLs = [f"https://cityofhamilton.perfectmind.com/Clients/BookMe4EventParticipants?eventId={eventId}" for eventId in eventIds]
+    
+    return eventURLs
 
 with open('data.json') as jsonData:
     data = json.load(jsonData)
@@ -68,22 +66,20 @@ headers = {
 }
 
 with requests.Session() as sess:
-    eventIds = getEventIds()
+    # might want to put date time inputs here. makes the most sense.
+    eventURLs = getEventURLs()
     
+    # Log in
+    sess.headers.update(headers)
+    sess.post(data["Login URL"], data=loginPayload)
 
-
-    # Get all elements for given days and times. 
-
-
+    while True:
+        for i, url in enumerate(eventURLs):
+            reserve = sess.get(url=url)
+            print(i)
 
     
-
-#     # Get all landing pages for desired date and time range
-  
-#     # I guess here we would just do get requests for all the links of that day for our time slot. 
-#     url = "https://cityofhamilton.perfectmind.com/39117/Clients/BookMe4EventParticipants?eventId=d0965f5a-a4f3-466a-83ce-121ff74e8d6a&occurrenceDate=20250819&widgetId=d63d746c-8862-4ca9-8b3c-5f79e841bba7&locationId=b83b0db1-8578-4056-a797-f24a053abd50&waitListMode=False"
-#     r = sess.get(url=url)
-    
+        
 #     landingPage = r.url
 
 #     # open this session into selenium

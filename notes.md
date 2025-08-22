@@ -42,4 +42,4 @@ also need to check to see if a single account have hold multiple courts at once.
 2) 
 
 
-Concurrent requests
+[In depth SO post about python concurrent requests](https://stackoverflow.com/questions/2632520/what-is-the-fastest-way-to-send-100-000-http-requests-in-python)
