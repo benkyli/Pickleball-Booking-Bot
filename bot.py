@@ -2,9 +2,11 @@ import requests
 import json
 from bs4 import BeautifulSoup
 from selenium import webdriver
-from seleniumrequests import Firefox
 
-def createDateTime(year, month, day, time="00:00"):
+import asyncio
+import aiohttp
+
+def createDateTime(year: str, month: str, day: str, time="00:00"):
     return f"{year}-{month}-{day}T{time}:00.000Z"
 
 # Definitely delete later
@@ -13,7 +15,7 @@ def printDic(dic):
         print(key, ":", dic[key])
 
 # May not be necessary; perhaps delete later
-def getUserVerificationToken(url):
+def getUserVerificationToken(url: str, sess):
     prebook = sess.get(url=url)
     soup = BeautifulSoup(prebook.text, "html.parser")
     requestVerificationToken = soup.find("input", {'name': '__RequestVerificationToken'})['value']
@@ -42,12 +44,8 @@ def getEventURLs():
     bookingPage = requests.post(url=data["Booking URL Updated"], data=dateTimeData)
     courts = bookingPage.json()["classes"]
 
-    # Get event IDs
-    eventIds = []
-    for court in courts:
-        eventIds.append(court["EventId"])
-
-    # convert to urls
+    # Get event IDs and convert to urls
+    eventIds = [court["EventId"] for court in courts]
     eventURLs = [f"https://cityofhamilton.perfectmind.com/Clients/BookMe4EventParticipants?eventId={eventId}" for eventId in eventIds]
     
     return eventURLs
@@ -65,19 +63,29 @@ headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:142.0) Gecko/20100101 Firefox/142.0'
 }
 
-with requests.Session() as sess:
-    # might want to put date time inputs here. makes the most sense.
-    eventURLs = getEventURLs()
+async def get(sess: aiohttp.ClientSession, url: str):
+    try:
+        return await sess.get(url=url)
+
+    except aiohttp.ClientConnectorError as e:
+        return e
     
-    # Log in
-    sess.headers.update(headers)
-    sess.post(data["Login URL"], data=loginPayload)
+async def spamURLs(urls):
+    async with aiohttp.ClientSession() as sess:
+        
+        # Log in
+        sess.headers.update(headers)
+        sess.post(data["Login URL"], data=loginPayload)
 
-    while True:
-        for i, url in enumerate(eventURLs):
-            reserve = sess.get(url=url)
-            print(i)
+        # wanna repeat this a few times at 12:30
+        for i in range(5):
+            results = await asyncio.gather(*[get(sess=sess, url=url) for url in urls])
+            
+        return results
 
+# Spam the pages
+eventURLs = getEventURLs()
+asyncio.run(spamURLs(eventURLs))
     
         
 #     landingPage = r.url

@@ -34,12 +34,10 @@ also need to check to see if a single account have hold multiple courts at once.
 - When you request an open landing page, the system holds it for you and locks out other users for "5 minutes" (feels like 3). However, there is some kind of problem occurring after doing this with the bot. It instead holds the spot, but doesn't assign it to the user. So when trying to manually checkout, there is no option even though the current user is definitely the one holding the spot. May need to change the header? Not sure how to do this part. May need to fully automate the entire checkout process from the request session itself. Would likely be better, but I wanted to try brute forcing quickly. 
 
 
-# make post for booking page
-1) Get the template for the post from data
-2) Replace the start and end date-times with your own desired parameters
-3) plug this into a post request with the page link as data?
-1.99) May need to swap request's __RequestVerificationToken with your current cookie's
-2) 
-
 
 [In depth SO post about python concurrent requests](https://stackoverflow.com/questions/2632520/what-is-the-fastest-way-to-send-100-000-http-requests-in-python)
+
+Process now
+1) Spam the fuck out of the links right before 12:30 using concurrent requests. Maybe only focus on 5 per batch instead of taking all 12. Or just try for all 12 because other people are doing the same thing. Maybe it's really competitive.
+2) After about 30 seconds of this, check each url to see if you got them reserved. If you did, Access that link and mark off the time slot you got so you don't get multiple in the same slot. 
+3) Given your reserved slots, finish the booking process, whether that be through more requests or manual clicking.
