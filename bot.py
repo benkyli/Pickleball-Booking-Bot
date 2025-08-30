@@ -25,7 +25,7 @@ def getEventURLs():
     # Prepare date and time values
     year = "2025"
     month = "08"
-    day = "24"
+    day = "29"
     startTime = "17:30"
     endTime = "20:30"
 
@@ -65,27 +65,43 @@ headers = {
 
 async def get(sess: aiohttp.ClientSession, url: str):
     try:
-        return await sess.get(url=url)
+        async with sess.get(url=url, timeout=5) as resp:
+            if resp.status != 200:
+                print(f"Response fail: {resp.status}")
 
-    except aiohttp.ClientConnectorError as e:
-        return e
+            return resp
+
+    except Exception as e:
+        print(e)
     
+# TODO: MUST test this thoroughly.
 async def spamURLs(urls):
     async with aiohttp.ClientSession() as sess:
         
         # Log in
-        sess.headers.update(headers)
-        sess.post(data["Login URL"], data=loginPayload)
-
+        login = await sess.post(url=data["Login URL"], data=loginPayload)
+   
         # wanna repeat this a few times at 12:30
-        for i in range(5):
-            results = await asyncio.gather(*[get(sess=sess, url=url) for url in urls])
+        if login:
+            for i in range(1):
+                print(i)
+                results = await asyncio.gather(*[get(sess=sess, url=url) for url in urls])
             
         return results
 
 # Spam the pages
-eventURLs = getEventURLs()
-asyncio.run(spamURLs(eventURLs))
+def main():
+    eventURLs = getEventURLs()
+    test = asyncio.run(spamURLs(eventURLs))
+    # check to see if we got the booking
+
+
+    # then book it.
+
+    # Then make it user friendly.
+
+if __name__ == "__main__":
+    main()
     
         
 #     landingPage = r.url
