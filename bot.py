@@ -24,10 +24,10 @@ def getUserVerificationToken(url: str, sess):
 def getEventURLs():
     # Prepare date and time values
     year = "2025"
-    month = "08"
-    day = "29"
-    startTime = "17:30"
-    endTime = "20:30"
+    month = "09"
+    day = "03"
+    startTime = "13:30"
+    endTime = "14:30"
 
     # Set date-time parameters in dictionary
     date = createDateTime(year=year, month=month, day=day, time="00:00") # time doesn't matter for date parameter
@@ -46,7 +46,7 @@ def getEventURLs():
 
     # Get event IDs and convert to urls
     eventIds = [court["EventId"] for court in courts]
-    eventURLs = [f"https://cityofhamilton.perfectmind.com/Clients/BookMe4EventParticipants?eventId={eventId}" for eventId in eventIds]
+    eventURLs = [f"https://cityofhamilton.perfectmind.com/Clients/BookMe4EventParticipants?eventId={eventId}&occurrenceDate={year}{month}{day}" for eventId in eventIds]
     
     return eventURLs
 
@@ -58,7 +58,7 @@ loginPayload = {
     data["Password Field Name"] : data["User Password"]    
 }
 
-# needed if we want to switch to selenium for manual finish after. Automatic finish might need mix of beautifulSoup and requests instead. 
+# Allows us to swap to selenium if necessary and may help against bot detection
 headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:142.0) Gecko/20100101 Firefox/142.0'
 }
@@ -66,17 +66,17 @@ headers = {
 async def get(sess: aiohttp.ClientSession, url: str):
     try:
         async with sess.get(url=url, timeout=5) as resp:
-            if resp.status != 200:
-                print(f"Response fail: {resp.status}")
-
-            return resp
+            if resp.status == 200:
+                return resp
+            else:
+                print(resp.status, "failed: ", resp.reason)
+                return url
 
     except Exception as e:
         print(e)
     
-# TODO: MUST test this thoroughly.
 async def spamURLs(urls):
-    async with aiohttp.ClientSession() as sess:
+    async with aiohttp.ClientSession(headers=headers) as sess:
         
         # Log in
         login = await sess.post(url=data["Login URL"], data=loginPayload)
@@ -84,7 +84,6 @@ async def spamURLs(urls):
         # wanna repeat this a few times at 12:30
         if login:
             for i in range(1):
-                print(i)
                 results = await asyncio.gather(*[get(sess=sess, url=url) for url in urls])
             
         return results
@@ -93,6 +92,7 @@ async def spamURLs(urls):
 def main():
     eventURLs = getEventURLs()
     test = asyncio.run(spamURLs(eventURLs))
+   
     # check to see if we got the booking
 
 
