@@ -41,3 +41,23 @@ Process now
 1) Spam the fuck out of the links right before 12:30 using concurrent requests. Maybe only focus on 5 per batch instead of taking all 12. Or just try for all 12 because other people are doing the same thing. Maybe it's really competitive.
 2) After about 30 seconds of this, check each url to see if you got them reserved. If you did, Access that link and mark off the time slot you got so you don't get multiple in the same slot. 
 3) Given your reserved slots, finish the booking process, whether that be through more requests or manual clicking.
+
+
+Current process report
+
+But first off, I need to check if the next button is a reliable indicator of if we are holding a slot. 
+
+Need to create a system that creates timeblocks from time settings. Then another system that checks to see which blocks have been filled by the holding system.
+
+So we need to check the content on the request initially to see if we got the booking, due to the connector closing after finishing the requests. I suppose it should still keep going, so it makes sense to check during the async spam
+Okay, so we should return the content, to check, 
+then cross off the list of that time block. and store this linky. 
+
+On user side, we should essesntially just show the slots that were successfully reserved. then they have to click or give permission to take the bookings. Takes care to not miss booking blocks. 
+Should also have a timer for this to show how long the hold will last. 
+
+
+For checking dynamic stuff:
+https://www.reddit.com/r/learnpython/comments/1hoir54/how_do_you_go_about_web_scraping_dynamic_pages/
+
+Resources file, constants file in book for me; check to see if spots are available.
