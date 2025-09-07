@@ -26,7 +26,6 @@ headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:142.0) Gecko/20100101 Firefox/142.0'
 }
 
-
 def createDateTime(year: str, month: str, day: str, time="00:00"):
     return f"{year}-{month}-{day}T{time}:00.000Z"
 
@@ -46,9 +45,9 @@ def getEventURLs():
     # Prepare date and time values
     year = "2025"
     month = "09"
-    day = "06"
-    startTime = "13:30"
-    endTime = "14:30"
+    day = "08"
+    startTime = "15:30"
+    endTime = "16:30"
 
     # Set date-time parameters in dictionary
     date = createDateTime(year=year, month=month, day=day, time="00:00") # time doesn't matter for date parameter
@@ -92,7 +91,7 @@ def checkSpotValue(resp):
     spotsScript = soup.find("script", string=spotsRegex)
     if spotsScript:
         spots = re.search(spotsRegex, spotsScript.string).group(1)
-        print(spots)
+        return spots
     else:
         print("uh oh no script found")
 
@@ -100,8 +99,10 @@ async def get(sess: aiohttp.ClientSession, url: str):
     try:
         async with sess.get(url=url, timeout=5) as resp:
             if resp.status == 200:
-                checkSpotValue(await resp.text())
-                return resp
+                spotGotten = checkSpotValue(await resp.text())
+                if spotGotten == "1": 
+                    return resp.url
+                # This will return none if the page was gotten successfully but the booking wasn't there
             else:
                 print(resp.status, "failed: ", resp.reason)
                 return url
@@ -111,17 +112,21 @@ async def get(sess: aiohttp.ClientSession, url: str):
     
 async def spamURLs(urls):
     async with aiohttp.ClientSession(headers=headers) as sess:
-        
-        # Log in
         login = await sess.post(url=data["Login URL"], data=loginPayload)
    
         # wanna repeat this a few times at 12:30
+        successfulHolds = set()
         if login:
             for i in range(1):
+                # Get all urls that we successfully held and save them
                 results = await asyncio.gather(*[get(sess=sess, url=url) for url in urls])
+                for url in results:
+                    if url != None and url not in successfulHolds:
+                        successfulHolds.add(url)
 
-        # just store the cookies and headers. 
-        return {"cookies": sess.cookie_jar}
+        # just store cookies and urls
+        return {"cookies": sess.cookie_jar,
+                "urls" : successfulHolds}
 
 # Set selenium driver type and cookies as dic
 def checkCookiesUpdated(driver, cookieJar):
@@ -136,29 +141,24 @@ def checkCookiesUpdated(driver, cookieJar):
 # Spam the pages
 def main():
     eventURLs = getEventURLs()
-    params = asyncio.run(spamURLs(eventURLs))
+    results = asyncio.run(spamURLs(eventURLs))
     
-    cookieJar = params["cookies"]
-    
-  
-    # set up selenium driver
-    for url in eventURLs:
+    cookieJar = results["cookies"]
+    successfulHolds = results["urls"]
+
+    for success in successfulHolds:
+        url = str(success) # string conversion is done here to save time during the request spamming
         driver = webdriver.Firefox()
-        wait = WebDriverWait(driver, 100)
+        wait = WebDriverWait(driver, 40)
        
-        
-        '''
-        Might need to put all args in the cookie, not just name and val.
-        Could try to create a profile to preload into the driver. Still keep trying the profile.
-        '''
+        # Update cookies
         driver.get(url=data["Booking Page URL"])
+        driver.delete_all_cookies()
 
         for cookie in cookieJar:
             driver.add_cookie({'name': cookie.key, 'value': cookie.value})
-          
-      
-        wait.until(lambda driver: checkCookiesUpdated(driver, cookieJar))
-      
+
+        wait.until(lambda driver: checkCookiesUpdated(driver, cookieJar)) # check that they're updated
     
         # get reservation page
         driver.get(url=url)
