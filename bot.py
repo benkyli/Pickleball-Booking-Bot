@@ -2,15 +2,9 @@ import requests
 import json
 from bs4 import BeautifulSoup
 from selenium import webdriver
-from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.firefox.options import Options
-from selenium.webdriver.firefox.firefox_profile import FirefoxProfile
 import asyncio
 import aiohttp
-import time
-import os
 import re
 
 with open('data.json') as jsonData:
@@ -46,13 +40,13 @@ def getEventURLs():
     year = "2025"
     month = "09"
     day = "08"
-    startTime = "15:30"
-    endTime = "16:30"
+    startTime = "12:30"
+    endTime = "13:30"
 
     # Set date-time parameters in dictionary
     date = createDateTime(year=year, month=month, day=day, time="00:00") # time doesn't matter for date parameter
     
-    dateTimeData = data["DateTime Payload Form Encoded"]
+    dateTimeData = data["DateTime Payload"]
     dateTimeData[data["Start Date Key"]] = date # start date and end date are the same because bookings are always taken 2 days in advance, so you don't get opportunities to do other days.
     dateTimeData[data["End Date Key"]] = date
     dateTimeData[data["Start Time Key"]] = createDateTime(year=year, month=month, day=day, time=startTime) # day doesn't matter for the time parameter
@@ -95,6 +89,31 @@ def checkSpotValue(resp):
     else:
         print("uh oh no script found")
 
+def createLiabilityForm(bookingPage):
+    soup = BeautifulSoup(bookingPage.text, "html.parser")
+    form = soup.find("form", id="eventParticipantsSelection") # put this id name in data json
+
+    formJSON = data["Liability Form Request JSON"]
+    formKeys = data["Liability Form Input Names"]
+    for key in formKeys:
+        attributeName = formKeys[key]
+        attributeValue = form.find("input", attrs={"name": attributeName})["value"]
+        formJSON[key] = attributeValue
+ # get remaining values not in form and generate the other one 2 that need event id
+
+    # generate qid values
+    qidSuffix = formJSON["ContactId"] + "_" + formJSON["EventId"] # put this initial string in data json
+    qidKey = "qid_ba52b933-cd1f-4010-bc5d-9e1d00ca3466_" + qidSuffix
+    qidKey2 = "qid_bb812e6a-ea9a-4786-9fc6-2f6485359389_" + qidSuffix
+    formJSON[qidKey] = "Agreed"
+    formJSON[qidKey2] = ""
+
+    return formJSON
+
+       # maybe just don't put verification one?
+
+
+
 async def get(sess: aiohttp.ClientSession, url: str):
     try:
         async with sess.get(url=url, timeout=5) as resp:
@@ -102,7 +121,7 @@ async def get(sess: aiohttp.ClientSession, url: str):
                 spotGotten = checkSpotValue(await resp.text())
                 if spotGotten == "1": 
                     return resp.url
-                # This will return none if the page was gotten successfully but the booking wasn't there
+                # This will return None if the page was gotten successfully but the booking wasn't there
             else:
                 print(resp.status, "failed: ", resp.reason)
                 return url
@@ -112,7 +131,7 @@ async def get(sess: aiohttp.ClientSession, url: str):
     
 async def spamURLs(urls):
     async with aiohttp.ClientSession(headers=headers) as sess:
-        login = await sess.post(url=data["Login URL"], data=loginPayload)
+        login = await sess.post(url=data["Login URL"], data=loginPayload)  # should probably have error handling here
    
         # wanna repeat this a few times at 12:30
         successfulHolds = set()
@@ -135,37 +154,69 @@ def checkCookiesUpdated(driver, cookieJar):
         if cookie.key not in driverCookies or driverCookies[cookie.key] != cookie.value:
             return False
         
-    
     return True
 
 # Spam the pages
 def main():
-    eventURLs = getEventURLs()
+    # eventURLs = getEventURLs()
+    eventURLs = ['https://cityofhamilton.perfectmind.com/Clients/BookMe4EventParticipants?eventId=599ada2f-d356-4c3f-b2eb-16a28b6433f4&occurrenceDate=20250911']
     results = asyncio.run(spamURLs(eventURLs))
     
     cookieJar = results["cookies"]
     successfulHolds = results["urls"]
+    print(successfulHolds)
 
-    for success in successfulHolds:
-        url = str(success) # string conversion is done here to save time during the request spamming
-        driver = webdriver.Firefox()
-        wait = WebDriverWait(driver, 40)
-       
-        # Update cookies
-        driver.get(url=data["Booking Page URL"])
-        driver.delete_all_cookies()
-
+    with requests.Session() as sess:
+        sess.headers = headers
         for cookie in cookieJar:
-            driver.add_cookie({'name': cookie.key, 'value': cookie.value})
-
-        wait.until(lambda driver: checkCookiesUpdated(driver, cookieJar)) # check that they're updated
+            sess.cookies.set(cookie.key, cookie.value)
+      
+        for success in successfulHolds:
+            # Get liability form info from booking page. Send post request for the form.
+            bookingPage = sess.get(success)
+            # get form and parse necessary input values; put the function here for generating the post request json
+            formJSON = createLiabilityForm(bookingPage)
     
-        # get reservation page
-        driver.get(url=url)
+            # post and get response 
+            '''
+            form is failing. Probably a token problem, but not sure. 
+            '''
+            formPOST = sess.post(url=data["Form POST URL"], data=formJSON)
+            print(formPOST.status_code)
+            print(formPOST.reason)
+            print(formPOST.json())
+      
+        # Go to form url (https://cityofhamilton.perfectmind.com/39117/Clients/BookMe4RegistrationForms/FillForms)
+        # Notes: Might need to navigate to booking url again and then request to the page as if you were doing it for real
+
+        # All the information should be prefilled in the form url if the information transfers like that. Hopefully it's not dynamically loaded. Otherwise, we have to manually input (cringe)
+
+        # After getting the form completion id, we need to create a cart object. Page after (https://cityofhamilton.perfectmind.com/39117/Clients/BookMe4Extras/Extras)
+        # Notes: There is also a form attribute here that is prefilled. Hopefully we can scrape this. 
+
+        #Check out page: Seems to be a lot of forms here. Might need to do a recaptcha check, fill in the obfuscated request data, get the token response, and input that into the checkout post request.
 
 
 
-    # then book it.
+
+    # for success in successfulHolds:
+               
+    #     # Selenium process
+    #     url = str(success) # string conversion is done here to save time during the request spamming
+    #     driver = webdriver.Firefox()
+    #     wait = WebDriverWait(driver, 40)
+       
+    #     # Update cookies
+    #     driver.get(url=data["Booking Page URL"])
+    #     driver.delete_all_cookies()
+
+    #     for cookie in cookieJar:
+    #         driver.add_cookie({'name': cookie.key, 'value': cookie.value})
+
+    #     wait.until(lambda driver: checkCookiesUpdated(driver, cookieJar)) # check that they're updated
+    
+    #     # get reservation page
+    #     driver.get(url=url)
 
     # Then make it user friendly.
 

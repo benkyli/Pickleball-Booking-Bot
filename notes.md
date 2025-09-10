@@ -61,3 +61,31 @@ For checking dynamic stuff:
 https://www.reddit.com/r/learnpython/comments/1hoir54/how_do_you_go_about_web_scraping_dynamic_pages/
 
 Resources file, constants file in book for me; check to see if spots are available.
+
+Later feature
+- Way to cancel booking (Could just be a redirect to the schedule page: https://cityofhamilton.perfectmind.com/MyProfile/Contact)
+
+
+Form Features
+1) - [x] FormId: in booking page form. (same across all forms)
+2) - [x] ContactId: in booking page form. (depends on user)
+3) - [x] EventId: in booking page form. Also just the eventId from before.
+4) - [x] EventObjectId: Same across both forms. In page, but in a different attribute ("ObjectId")
+5) - [x] Event location Id: in booking page form.
+6) - [x] "qid_ba52b933-cd1f-4010-bc5d-9e1d00ca3466_2334376b-96f7-4fce-af55-d7f8558287df_009a3135-5f4d-7b24-f98a-99a63fff3d21": "Agreed"; the start of the string is the same across forms. The ending is just the event id.
+7) - [ ] Request Verification token. May not be necessary. Not located in the booking page. Probably generated on page creation. hm. Will need to test.
+8) - rest are empty params.
+Form Response: Gives an Id that is needed for cart check out
+
+Cart Item:
+EventId: same as above
+ObjectId: Same as above
+MemberId: same as above
+Full Name: Will need to parse from user (Might be in html/script already)
+Cart Id: New thing. Might just be the id for the cart. Check html for this again
+Cart Object and item id's: same as object and event prior.
+Price type Id: Same across forms (free prob)
+Cart Name: Same across forms, but seems to be tied to year
+
+
+Should probably add error writes in case something happens. So I can see what they were, when they were, etc.
