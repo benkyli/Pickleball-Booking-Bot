@@ -38,6 +38,7 @@
         "__RequestVerificationToken": ""
     },
 
+    "Form Page URL"  : "https://cityofhamilton.perfectmind.com/39117/SocialSite/BookMe4RegistrationForms/FillForms",
     "Form POST URL" : "https://cityofhamilton.perfectmind.com/39117/MyProfile/RegForm/SaveCompletedForm",
 
     "Liability Form Request JSON" : {

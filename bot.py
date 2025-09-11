@@ -89,25 +89,31 @@ def checkSpotValue(resp):
     else:
         print("uh oh no script found")
 
-def createLiabilityForm(bookingPage):
-    soup = BeautifulSoup(bookingPage.text, "html.parser")
-    form = soup.find("form", id="eventParticipantsSelection") # put this id name in data json
-
+def createLiabilityForm(bookingPage, formPage):
     formJSON = data["Liability Form Request JSON"]
+
+    # Get form values from booking page
+    bookingPageSoup = BeautifulSoup(bookingPage.text, "html.parser")
+    form = bookingPageSoup.find("form", id="eventParticipantsSelection") # put this id name in data json
     formKeys = data["Liability Form Input Names"]
     for key in formKeys:
         attributeName = formKeys[key]
         attributeValue = form.find("input", attrs={"name": attributeName})["value"]
         formJSON[key] = attributeValue
- # get remaining values not in form and generate the other one 2 that need event id
 
-    # generate qid values
+    # Generate qid values
     qidSuffix = formJSON["ContactId"] + "_" + formJSON["EventId"] # put this initial string in data json
     qidKey = "qid_ba52b933-cd1f-4010-bc5d-9e1d00ca3466_" + qidSuffix
     qidKey2 = "qid_bb812e6a-ea9a-4786-9fc6-2f6485359389_" + qidSuffix
     formJSON[qidKey] = "Agreed"
     formJSON[qidKey2] = ""
 
+    # Get the RequestVerificationToken
+    formPageSoup = BeautifulSoup(formPage.text, "html.parser")
+    tokenForm = formPageSoup.find("form") # there is only 1 form available on load
+    tokenInput = tokenForm.find("input") # there is only 1 input in the form
+    formJSON["__RequestVerificationToken"] = tokenInput["value"]
+   
     return formJSON
 
        # maybe just don't put verification one?
@@ -159,7 +165,7 @@ def checkCookiesUpdated(driver, cookieJar):
 # Spam the pages
 def main():
     # eventURLs = getEventURLs()
-    eventURLs = ['https://cityofhamilton.perfectmind.com/Clients/BookMe4EventParticipants?eventId=599ada2f-d356-4c3f-b2eb-16a28b6433f4&occurrenceDate=20250911']
+    eventURLs = ['https://cityofhamilton.perfectmind.com/Clients/BookMe4EventParticipants?eventId=bd4f3274-cf1a-fad6-8468-88ba7ed0fca4&occurrenceDate=20250911']
     results = asyncio.run(spamURLs(eventURLs))
     
     cookieJar = results["cookies"]
@@ -174,10 +180,11 @@ def main():
         for success in successfulHolds:
             # Get liability form info from booking page. Send post request for the form.
             bookingPage = sess.get(success)
+            headers["Referer"] = str(success)
+            formPage = sess.get(data["Form Page URL"], headers=headers)
             # get form and parse necessary input values; put the function here for generating the post request json
-            formJSON = createLiabilityForm(bookingPage)
+            formJSON = createLiabilityForm(bookingPage, formPage)
     
-            # post and get response 
             '''
             form is failing. Probably a token problem, but not sure. 
             '''
