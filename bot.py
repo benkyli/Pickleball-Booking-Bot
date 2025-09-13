@@ -5,9 +5,11 @@ from selenium import webdriver
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.action_chains import ActionChains
 import asyncio
 import aiohttp
 import re
+import time
 
 with open('data.json') as jsonData:
     data = json.load(jsonData)
@@ -163,13 +165,17 @@ def checkCookiesUpdated(driver, cookieJar):
 # Spam the pages
 def main():
     # eventURLs = getEventURLs()
-    cum = "0049bc53-67c1-48e3-aa3b-27e30e4b0e12"
-    eventURLs = [f'https://cityofhamilton.perfectmind.com/Clients/BookMe4EventParticipants?eventId={cum}&occurrenceDate=20250914']
+    cum = "ddcd889e-41a9-44f9-84c8-f1467f1d5342"
+    
+    eventURLs = [f'https://cityofhamilton.perfectmind.com/Clients/BookMe4EventParticipants?eventId={cum}&occurrenceDate=20250915']
     results = asyncio.run(spamURLs(eventURLs))
     
     cookieJar = results["cookies"]
     successfulHolds = results["urls"]
     print(successfulHolds)
+
+    # Have a tracker for time slots. probably just max time - min time (hour), then use those as indices. Then when checking times, compare the lower time slot hour and minus to the lowest start time.
+    
 
     for success in successfulHolds:
                
@@ -200,7 +206,16 @@ def main():
             wait.until(EC.staleness_of(button))
             print(i)
 
-        wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button.process-now"))).click()
+        wait.until(EC.frame_to_be_available_and_switch_to_it((By.CLASS_NAME, "online-store")))
+
+        # simulate human movement and submit
+        time.sleep(1)
+        actions = ActionChains(driver)
+        processButton = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button.process-now")))
+
+        actions.move_to_element(processButton).perform()
+        time.sleep(1.2)
+        processButton.click()
             
     # Then make it user friendly.
 
