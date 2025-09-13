@@ -3,6 +3,8 @@ import json
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
 import asyncio
 import aiohttp
 import re
@@ -116,10 +118,6 @@ def createLiabilityForm(bookingPage, formPage):
    
     return formJSON
 
-       # maybe just don't put verification one?
-
-
-
 async def get(sess: aiohttp.ClientSession, url: str):
     try:
         async with sess.get(url=url, timeout=5) as resp:
@@ -165,66 +163,45 @@ def checkCookiesUpdated(driver, cookieJar):
 # Spam the pages
 def main():
     # eventURLs = getEventURLs()
-    eventURLs = ['https://cityofhamilton.perfectmind.com/Clients/BookMe4EventParticipants?eventId=bd4f3274-cf1a-fad6-8468-88ba7ed0fca4&occurrenceDate=20250911']
+    cum = "0049bc53-67c1-48e3-aa3b-27e30e4b0e12"
+    eventURLs = [f'https://cityofhamilton.perfectmind.com/Clients/BookMe4EventParticipants?eventId={cum}&occurrenceDate=20250914']
     results = asyncio.run(spamURLs(eventURLs))
     
     cookieJar = results["cookies"]
     successfulHolds = results["urls"]
     print(successfulHolds)
 
-    with requests.Session() as sess:
-        sess.headers = headers
-        for cookie in cookieJar:
-            sess.cookies.set(cookie.key, cookie.value)
-      
-        for success in successfulHolds:
-            # Get liability form info from booking page. Send post request for the form.
-            bookingPage = sess.get(success)
-            headers["Referer"] = str(success)
-            formPage = sess.get(data["Form Page URL"], headers=headers)
-            # get form and parse necessary input values; put the function here for generating the post request json
-            formJSON = createLiabilityForm(bookingPage, formPage)
-    
-            '''
-            form is failing. Probably a token problem, but not sure. 
-            '''
-            formPOST = sess.post(url=data["Form POST URL"], data=formJSON)
-            print(formPOST.status_code)
-            print(formPOST.reason)
-            print(formPOST.json())
-      
-        # Go to form url (https://cityofhamilton.perfectmind.com/39117/Clients/BookMe4RegistrationForms/FillForms)
-        # Notes: Might need to navigate to booking url again and then request to the page as if you were doing it for real
-
-        # All the information should be prefilled in the form url if the information transfers like that. Hopefully it's not dynamically loaded. Otherwise, we have to manually input (cringe)
-
-        # After getting the form completion id, we need to create a cart object. Page after (https://cityofhamilton.perfectmind.com/39117/Clients/BookMe4Extras/Extras)
-        # Notes: There is also a form attribute here that is prefilled. Hopefully we can scrape this. 
-
-        #Check out page: Seems to be a lot of forms here. Might need to do a recaptcha check, fill in the obfuscated request data, get the token response, and input that into the checkout post request.
-
-
-
-
-    # for success in successfulHolds:
+    for success in successfulHolds:
                
-    #     # Selenium process
-    #     url = str(success) # string conversion is done here to save time during the request spamming
-    #     driver = webdriver.Firefox()
-    #     wait = WebDriverWait(driver, 40)
+        # Selenium process
+        url = str(success) # string conversion is done here to save time during the request spamming
+        driver = webdriver.Firefox()
+        wait = WebDriverWait(driver, 25)
        
-    #     # Update cookies
-    #     driver.get(url=data["Booking Page URL"])
-    #     driver.delete_all_cookies()
+        # Update cookies
+        driver.get(url=data["Booking Page URL"])
+        driver.delete_all_cookies()
 
-    #     for cookie in cookieJar:
-    #         driver.add_cookie({'name': cookie.key, 'value': cookie.value})
+        for cookie in cookieJar:
+            driver.add_cookie({'name': cookie.key, 'value': cookie.value})
 
-    #     wait.until(lambda driver: checkCookiesUpdated(driver, cookieJar)) # check that they're updated
+        wait.until(lambda driver: checkCookiesUpdated(driver, cookieJar))
     
-    #     # get reservation page
-    #     driver.get(url=url)
+        # get event page
+        driver.get(url=url)
 
+        # wait for overlay to dissappear on reservation page
+        wait.until(EC.invisibility_of_element_located((By.ID, "ajaxRequestStatus_attendance")))
+
+        # click next button on the reservation page, liability form page, and pricing page
+        for i in range(3):
+            button = wait.until(EC.element_to_be_clickable((By.XPATH, "//a[./span[text()='Next']]")))
+            button.click()
+            wait.until(EC.staleness_of(button))
+            print(i)
+
+        wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button.process-now"))).click()
+            
     # Then make it user friendly.
 
 if __name__ == "__main__":
