@@ -24,6 +24,13 @@ headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:142.0) Gecko/20100101 Firefox/142.0'
 }
 
+# Prepare date and time values
+year = "2025"
+month = "09"
+day = "16"
+startTime = "12:30"
+endTime = "15:30"
+
 def createDateTime(year: str, month: str, day: str, time="00:00"):
     return f"{year}-{month}-{day}T{time}:00.000Z"
 
@@ -32,21 +39,8 @@ def printDic(dic):
     for key in dic:
         print(key, ":", dic[key])
 
-# May not be necessary; perhaps delete later
-def getUserVerificationToken(url: str, sess):
-    prebook = sess.get(url=url)
-    soup = BeautifulSoup(prebook.text, "html.parser")
-    requestVerificationToken = soup.find("input", name='__RequestVerificationToken')['value']
-    return requestVerificationToken
 
 def getEventURLs():
-    # Prepare date and time values
-    year = "2025"
-    month = "09"
-    day = "08"
-    startTime = "12:30"
-    endTime = "13:30"
-
     # Set date-time parameters in dictionary
     date = createDateTime(year=year, month=month, day=day, time="00:00") # time doesn't matter for date parameter
     
@@ -82,10 +76,10 @@ def checkCookiesUpdated(driver, cookieJar):
             return False
     return True
 
-def checkSpotValue(resp):
+def checkSpotValue(html):
     # Note: The () in the regex is the group(1) being extracted below; these are the spots.
-    soup = BeautifulSoup(resp, "html.parser")
-    spotsRegex = re.compile(r"var\s+spotsLeft\s*=\s*([01]);", re.DOTALL)
+    soup = BeautifulSoup(html, "html.parser")
+    spotsRegex = re.compile(r"var\s+spotsLeft\s*=\s*([01]);")
     spotsScript = soup.find("script", string=spotsRegex)
     if spotsScript:
         spots = re.search(spotsRegex, spotsScript.string).group(1)
@@ -93,65 +87,73 @@ def checkSpotValue(resp):
     else:
         print("uh oh no script found")
 
-def createLiabilityForm(bookingPage, formPage):
-    formJSON = data["Liability Form Request JSON"]
+'''
+Combine these functions more easily. Make it more robust, although, probably not necessary.
+Then test the start time one. Yeagh, 
+'''
 
-    # Get form values from booking page
-    bookingPageSoup = BeautifulSoup(bookingPage.text, "html.parser")
-    form = bookingPageSoup.find("form", id="eventParticipantsSelection") # put this id name in data json
-    formKeys = data["Liability Form Input Names"]
-    for key in formKeys:
-        attributeName = formKeys[key]
-        attributeValue = form.find("input", attrs={"name": attributeName})["value"]
-        formJSON[key] = attributeValue
+def checkStartTime(html):
+    soup = BeautifulSoup(html, "html.parser")
+    timeRegex = re.compile(r'"StartTime":"([^"]+)"') 
+    timeScript = soup.find("script", string=timeRegex)
+    if timeScript:
+        startTimeString = re.search(timeRegex, timeScript.string).group(1)
+        # parse the string to get the start time 24 hour value.
+        hourModifier = 0
+        if startTimeString[-2:] == "PM" and startTimeString[:2] != "12": # there are no 12AM bookings, so no need for that edge case
+            hourModifier = 12
+        
+        return int(startTimeString[:2]) + hourModifier
+    
+    else:
+        print("no script found")
 
-    # Generate qid values
-    qidSuffix = formJSON["ContactId"] + "_" + formJSON["EventId"] # put this initial string in data json
-    qidKey = "qid_ba52b933-cd1f-4010-bc5d-9e1d00ca3466_" + qidSuffix
-    qidKey2 = "qid_bb812e6a-ea9a-4786-9fc6-2f6485359389_" + qidSuffix
-    formJSON[qidKey] = "Agreed"
-    formJSON[qidKey2] = ""
-
-    # Get the RequestVerificationToken
-    formPageSoup = BeautifulSoup(formPage.text, "html.parser")
-    tokenForm = formPageSoup.find("form") # there is only 1 form available on load
-    tokenInput = tokenForm.find("input") # there is only 1 input in the form
-    formJSON["__RequestVerificationToken"] = tokenInput["value"]
-   
-    return formJSON
 
 async def get(sess: aiohttp.ClientSession, url: str):
     try:
         async with sess.get(url=url, timeout=5) as resp:
             if resp.status == 200:
-                spotGotten = checkSpotValue(await resp.text())
+                respHTML = await resp.text()
+                spotGotten = checkSpotValue(respHTML)
                 if spotGotten == "1": 
-                    return resp.url
+                    startTime = checkStartTime(respHTML)
+                    return [startTime, resp.url]
                 # This will return None if the page was gotten successfully but the booking wasn't there
             else:
                 print(resp.status, "failed: ", resp.reason)
-                return url
 
     except Exception as e:
         print(e)
     
-async def spamURLs(urls):
+async def spamURLs(urls, timeSlotsAmount):
     async with aiohttp.ClientSession(headers=headers) as sess:
         login = await sess.post(url=data["Login URL"], data=loginPayload)  # should probably have error handling here
    
         # wanna repeat this a few times at 12:30
         successfulHolds = set()
+        successfulTimeSlots = set()
         if login:
             for i in range(1):
                 # Get all urls that we successfully held and save them
                 results = await asyncio.gather(*[get(sess=sess, url=url) for url in urls])
-                for url in results:
-                    if url != None and url not in successfulHolds:
-                        successfulHolds.add(url)
+                for success in results:
+                    if success != None:
+                        bookingTime = success[0]
+                        url = success[1]
+                        if bookingTime not in successfulTimeSlots and url not in successfulHolds:
+                            successfulTimeSlots.add(bookingTime)
+                            successfulHolds.add(url)
+                            print(f"time got: {bookingTime}")
+                            # may also want to remove url from urls so we stop looping them. Also might want to add time check earlier so we skip some pages.
+
+                if len(successfulTimeSlots) == timeSlotsAmount:
+                    break
+                        
 
         # just store cookies and urls
         return {"cookies": sess.cookie_jar,
-                "urls" : successfulHolds}
+                "urls" : successfulHolds,
+                "timeSlots": successfulTimeSlots}
 
 # Set selenium driver type and cookies as dic
 def checkCookiesUpdated(driver, cookieJar):
@@ -164,22 +166,27 @@ def checkCookiesUpdated(driver, cookieJar):
 
 # Spam the pages
 def main():
-    # eventURLs = getEventURLs()
-    cum = "ddcd889e-41a9-44f9-84c8-f1467f1d5342"
-    
-    eventURLs = [f'https://cityofhamilton.perfectmind.com/Clients/BookMe4EventParticipants?eventId={cum}&occurrenceDate=20250915']
-    results = asyncio.run(spamURLs(eventURLs))
+    eventURLs = getEventURLs()
+    startTimeHour = int(startTime[0:2]) # just the first 2 characters have the hour time.
+    endTimeHour = int(endTime[0:2])
+    timeSlotsAmount = endTimeHour - startTimeHour
+
+    results = asyncio.run(spamURLs(urls=eventURLs, timeSlotsAmount=timeSlotsAmount))
     
     cookieJar = results["cookies"]
     successfulHolds = results["urls"]
-    print(successfulHolds)
 
     # Have a tracker for time slots. probably just max time - min time (hour), then use those as indices. Then when checking times, compare the lower time slot hour and minus to the lowest start time.
+    if not successfulHolds:
+        print("No open bookings")
+        return
+    
     
 
     for success in successfulHolds:
-               
-        # Selenium process
+        # We're just going to assume that the checkout will occur at this point. Surely nothing will fail...
+
+        # Set up driver
         url = str(success) # string conversion is done here to save time during the request spamming
         driver = webdriver.Firefox()
         wait = WebDriverWait(driver, 25)
@@ -204,18 +211,16 @@ def main():
             button = wait.until(EC.element_to_be_clickable((By.XPATH, "//a[./span[text()='Next']]")))
             button.click()
             wait.until(EC.staleness_of(button))
-            print(i)
 
         wait.until(EC.frame_to_be_available_and_switch_to_it((By.CLASS_NAME, "online-store")))
 
         # simulate human movement and submit
         time.sleep(1)
         actions = ActionChains(driver)
-        processButton = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button.process-now")))
-
-        actions.move_to_element(processButton).perform()
+        checkoutButton = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button.process-now")))
+        actions.move_to_element(checkoutButton).perform()
         time.sleep(1.2)
-        processButton.click()
+        checkoutButton.click()
             
     # Then make it user friendly.
 
