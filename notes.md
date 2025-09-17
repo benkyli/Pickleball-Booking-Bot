@@ -89,3 +89,13 @@ Cart Name: Same across forms, but seems to be tied to year
 
 
 Should probably add error writes in case something happens. So I can see what they were, when they were, etc.
+
+GUI
+- Get log in info. 
+    - Email
+    - Password
+- Get date desired info
+    - Could have calendar function. Could just do single inputs for each: day, month, year
+- Get time info.
+    - Start
+    - End
