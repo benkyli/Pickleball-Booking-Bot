@@ -40,6 +40,23 @@ def printDic(dic):
         print(key, ":", dic[key])
 
 
+def testLogin(email: str, password: str):
+    payload = {
+        data["Email Field Name"] : email,
+        data["Password Field Name"] : password    
+    }
+    
+    with requests.Session() as sess:
+        try:
+            login = sess.get(url=data["Login URL"], data=payload)
+            if login.status_code == 200:
+                return True
+            else:
+                return False
+        except:
+            print("failed to get login page")
+
+
 def getEventURLs():
     # Set date-time parameters in dictionary
     date = createDateTime(year=year, month=month, day=day, time="00:00") # time doesn't matter for date parameter
