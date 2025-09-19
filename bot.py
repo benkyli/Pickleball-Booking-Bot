@@ -31,7 +31,7 @@ day = "16"
 startTime = "12:30"
 endTime = "15:30"
 
-def createDateTime(year: str, month: str, day: str, time="00:00"):
+def create_datetime(year: str, month: str, day: str, time="00:00"):
     return f"{year}-{month}-{day}T{time}:00.000Z"
 
 # Definitely delete later
@@ -40,7 +40,7 @@ def printDic(dic):
         print(key, ":", dic[key])
 
 
-def testLogin(email: str, password: str):
+def test_login(email: str, password: str):
     payload = {
         data["Email Field Name"] : email,
         data["Password Field Name"] : password    
@@ -57,15 +57,15 @@ def testLogin(email: str, password: str):
             print("failed to get login page")
 
 
-def getEventURLs():
+def get_event_urls():
     # Set date-time parameters in dictionary
-    date = createDateTime(year=year, month=month, day=day, time="00:00") # time doesn't matter for date parameter
+    date = create_datetime(year=year, month=month, day=day, time="00:00") # time doesn't matter for date parameter
     
     dateTimeData = data["DateTime Payload"]
     dateTimeData[data["Start Date Key"]] = date # start date and end date are the same because bookings are always taken 2 days in advance, so you don't get opportunities to do other days.
     dateTimeData[data["End Date Key"]] = date
-    dateTimeData[data["Start Time Key"]] = createDateTime(year=year, month=month, day=day, time=startTime) # day doesn't matter for the time parameter
-    dateTimeData[data["End Time Key"]] = createDateTime(year=year, month=month, day=day, time=endTime)
+    dateTimeData[data["Start Time Key"]] = create_datetime(year=year, month=month, day=day, time=startTime) # day doesn't matter for the time parameter
+    dateTimeData[data["End Time Key"]] = create_datetime(year=year, month=month, day=day, time=endTime)
 
     # Get the booking page
     bookingPage = requests.post(url=data["Booking URL Updated"], data=dateTimeData)
@@ -78,7 +78,7 @@ def getEventURLs():
     return eventURLs
 
 # Might need to add the rest of things
-def reformatSeleniumCookies(seleniumCookies: list):
+def reformat_selenium_cookies(seleniumCookies: list):
     cookies = {}
     for cookie in seleniumCookies:
         name = cookie["name"]
@@ -86,14 +86,14 @@ def reformatSeleniumCookies(seleniumCookies: list):
         cookies[name] = value
     return cookies
 
-def checkCookiesUpdated(driver, cookieJar):
-    driverCookies = reformatSeleniumCookies(driver.get_cookies())
+def check_cookies_updated(driver, cookieJar):
+    driverCookies = reformat_selenium_cookies(driver.get_cookies())
     for cookie in cookieJar:
         if cookie.key not in driverCookies or driverCookies[cookie.key] != cookie.value:
             return False
     return True
 
-def checkSpotValue(html):
+def check_spot_value(html):
     # Note: The () in the regex is the group(1) being extracted below; these are the spots.
     soup = BeautifulSoup(html, "html.parser")
     spotsRegex = re.compile(r"var\s+spotsLeft\s*=\s*([01]);")
@@ -109,7 +109,7 @@ Combine these functions more easily. Make it more robust, although, probably not
 Then test the start time one. Yeagh, 
 '''
 
-def checkStartTime(html):
+def check_start_time(html):
     soup = BeautifulSoup(html, "html.parser")
     timeRegex = re.compile(r'"StartTime":"([^"]+)"') 
     timeScript = soup.find("script", string=timeRegex)
@@ -131,9 +131,9 @@ async def get(sess: aiohttp.ClientSession, url: str):
         async with sess.get(url=url, timeout=5) as resp:
             if resp.status == 200:
                 respHTML = await resp.text()
-                spotGotten = checkSpotValue(respHTML)
+                spotGotten = check_spot_value(respHTML)
                 if spotGotten == "1": 
-                    startTime = checkStartTime(respHTML)
+                    startTime = check_start_time(respHTML)
                     return [startTime, resp.url]
                 # This will return None if the page was gotten successfully but the booking wasn't there
             else:
@@ -142,7 +142,7 @@ async def get(sess: aiohttp.ClientSession, url: str):
     except Exception as e:
         print(e)
     
-async def spamURLs(urls, timeSlotsAmount):
+async def spam_urls(urls, timeSlotsAmount):
     async with aiohttp.ClientSession(headers=headers) as sess:
         login = await sess.post(url=data["Login URL"], data=loginPayload)  # should probably have error handling here
    
@@ -172,23 +172,15 @@ async def spamURLs(urls, timeSlotsAmount):
                 "urls" : successfulHolds,
                 "timeSlots": successfulTimeSlots}
 
-# Set selenium driver type and cookies as dic
-def checkCookiesUpdated(driver, cookieJar):
-    driverCookies = reformatSeleniumCookies(driver.get_cookies())
-    for cookie in cookieJar:
-        if cookie.key not in driverCookies or driverCookies[cookie.key] != cookie.value:
-            return False
-        
-    return True
 
 # Spam the pages
 def main():
-    eventURLs = getEventURLs()
+    eventURLs = get_event_urls()
     startTimeHour = int(startTime[0:2]) # just the first 2 characters have the hour time.
     endTimeHour = int(endTime[0:2])
     timeSlotsAmount = endTimeHour - startTimeHour
 
-    results = asyncio.run(spamURLs(urls=eventURLs, timeSlotsAmount=timeSlotsAmount))
+    results = asyncio.run(spam_urls(urls=eventURLs, timeSlotsAmount=timeSlotsAmount))
     
     cookieJar = results["cookies"]
     successfulHolds = results["urls"]
@@ -215,7 +207,7 @@ def main():
         for cookie in cookieJar:
             driver.add_cookie({'name': cookie.key, 'value': cookie.value})
 
-        wait.until(lambda driver: checkCookiesUpdated(driver, cookieJar))
+        wait.until(lambda driver: check_cookies_updated(driver, cookieJar))
     
         # get event page
         driver.get(url=url)
