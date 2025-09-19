@@ -1,10 +1,10 @@
 import tkinter as tk
-from bot import testLogin
+from bot import test_login
 
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
-        # window params
+        # set window params
         self.title("Pickleball Bot")
         self.geometry("500x500")
         
@@ -13,22 +13,42 @@ class App(tk.Tk):
         container.grid_rowconfigure(0, weight=1)
         container.grid_columnconfigure(0, weight=1)
 
-        def check_login(self):
-            with open("data.json", "r") as data:
-                email = data["User Email"]
-                password = data["User Password"]
-            if email and password:
-                if testLogin(email=email, password=password):
-                    return # then put a login screen ui. self.show_frame("nameOfFrame")
-                else:
-                    return # login screen
+        # set up frames
+        self.frames = {}
+        # for F in (MainScreen, LoginScreen):
+        #     page_name = F.__name__
+        #     frame = F(parent=container, controller=self)
+        #     self.frames[page_name] = frame
+        #     frame.grid(row=0, column=0, sticky="nsew")
+
+        name = LoginScreen.__name__
+        frame = LoginScreen(parent=container, controller=self)
+        self.frames[name] = frame
+        frame.grid(row=0, column=0, sticky="nsew")
+        self.frames[name].tkraise()
+        
+
+    def check_login(self):
+        with open("data.json", "r") as data:
+            email = data["User Email"]
+            password = data["User Password"]
+        if email and password:
+            if test_login(email=email, password=password):
+                return # then put a login screen ui. self.show_frame("nameOfFrame")
             else:
-                return # put an error code or something, or just ask to try again. Same as above, but with other name
+                return # login screen
+        else:
+            return # put an error code or something, or just ask to try again. Same as above, but with other name
             
 
-class MainScreen(tk.Frame):
-    def __init__(self, parent, controller, user):
+    def show_frame(self, page_name):
+        frame = self.frames[page_name]
+        frame.tkraise()
+        
 
+class MainScreen(tk.Frame): 
+    def __init__(self, parent, controller): # will need to **args this.
+        super().__init__(parent)
         # have a section showing user logged in
         # Allow user to logout if wrong user. Logout should clear the user and password from the file.
 
@@ -49,7 +69,7 @@ class LoginScreen(tk.Frame):
         self.email_field.pack()
 
         tk.Label(self, text="Password").pack()
-        self.password_field = tk.Entry(self, width=30, show="*").pack(pady=5)
+        self.password_field = tk.Entry(self, width=30, show="*")
         self.password_field.pack()
 
         tk.Button(self, text="Login", command=self.login).pack(pady=20)
@@ -71,7 +91,10 @@ class LoginScreen(tk.Frame):
 
 class scrapeScreen(tk.Frame):
     def __init__(self, parent, controller):
-        self.juum = 3
+        super().__init__(parent)
         # have fields for date, time range.
         # have option to do now or at specific time. Maybe have a little highlight that explains the diff.
         
+if __name__ == "__main__":
+    app = App()
+    app.mainloop()
