@@ -1,12 +1,16 @@
 import tkinter as tk
+from tkinter import messagebox
 from bot import test_login
+import json
 
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
-        # set window params
+        # set window params and login status
         self.title("Pickleball Bot")
         self.geometry("500x500")
+        self.user_email = None
+        self.login_status = self.try_credentials()
         
         container = tk.Frame(self)
         container.pack(fill="both", expand=True)
@@ -15,45 +19,48 @@ class App(tk.Tk):
 
         # set up frames
         self.frames = {}
-        # for F in (MainScreen, LoginScreen):
-        #     page_name = F.__name__
-        #     frame = F(parent=container, controller=self)
-        #     self.frames[page_name] = frame
-        #     frame.grid(row=0, column=0, sticky="nsew")
+        for F in (MainScreen, LoginScreen):
+            page_name = F.__name__
+            frame = F(parent=container, controller=self)
+            self.frames[page_name] = frame
+            frame.grid(row=0, column=0, sticky="nsew")
 
-        name = LoginScreen.__name__
-        frame = LoginScreen(parent=container, controller=self)
-        self.frames[name] = frame
-        frame.grid(row=0, column=0, sticky="nsew")
-        self.frames[name].tkraise()
-        
-
-    def check_login(self):
-        with open("data.json", "r") as data:
-            email = data["User Email"]
-            password = data["User Password"]
-        if email and password:
-            if test_login(email=email, password=password):
-                return # then put a login screen ui. self.show_frame("nameOfFrame")
-            else:
-                return # login screen
+        if self.login_status:
+            self.show_frame("MainScreen")
         else:
-            return # put an error code or something, or just ask to try again. Same as above, but with other name
-            
+            self.show_frame("LoginPage")
 
     def show_frame(self, page_name):
         frame = self.frames[page_name]
         frame.tkraise()
-        
+        frame.update_content()
 
-class MainScreen(tk.Frame): 
-    def __init__(self, parent, controller): # will need to **args this.
-        super().__init__(parent)
-        # have a section showing user logged in
-        # Allow user to logout if wrong user. Logout should clear the user and password from the file.
+    def try_credentials(self):
+        with open("data.json", "r") as f:
+            data = json.load(f)
+            email = data["User Email"]
+            password = data["User Password"]
 
-        # have button for going to scrape screen
-        self.yay = 1
+        if email and password and test_login(email=email, password=password):  
+            self.user_email = email
+            return True
+        else:
+            return False
+    
+    def logout(self):
+        self.user_email = None
+        self.login_status = False
+
+        with open("data.json") as f:
+            data = json.load(f)
+            data["User Email"] = ""
+            data["User Password"] = ""
+            
+        with open("data.json", "w") as f:
+            json.dump(data, f)   
+
+        self.show_frame("LoginScreen")
+      
 
 class LoginScreen(tk.Frame):
     def __init__(self, parent, controller):
@@ -75,18 +82,72 @@ class LoginScreen(tk.Frame):
         tk.Button(self, text="Login", command=self.login).pack(pady=20)
 
     def login(self):
-        email = self.email_entry.get()
+        email = self.email_field.get()
         password = self.password_field.get()
+
+        login_works = test_login(email=email, password=password)
+        if login_works:
+            with open("data.json") as f:
+                data = json.load(f)
+                data["User Email"] = email
+                data["User Password"] = password
+
+            with open("data.json", "w") as f:
+                json.dump(data, f)
+
+            # update user email attribute for the controller 
+            self.controller.user_email = email
+            self.controller.login_status = True
+            self.controller.show_frame("MainScreen")
+        
+        else:
+            tk.messagebox.showerror("Login Fail", f"Login failed. Please try again.")
+
+    # just added to avoid missing method errors. Would make sense to have this frame inherit from a custom frame with an abstract method for this.
+    def update_content(self):
+        pass
 
     # add handler to show password
 
 
-        # have submit. Submit might just be the checklogin from before. Except this time
-        # If success, write user ans password to file, return main page
-        # else, give an error to try again. Stay on this page. 
 
-        # if fail
-        # tk.messagebox.showinfo("Success", f"First Field: ")
+class MainScreen(tk.Frame): 
+    def __init__(self, parent, controller): # will need to **args this.
+        super().__init__(parent)
+        self.controller = controller
+        self.logout_button_visible = False
+
+        # header section showing tab purpose and login info
+        header_frame = tk.Frame(self)
+        header_frame.pack(side="top", fill="x")
+
+        tab_label = tk.Label(header_frame, text="Choose when you want to book the court")
+        tab_label.pack(side="left")
+
+        self.user_label = tk.Label(header_frame, text="", cursor="hand2")
+        self.user_label.pack(side="right")
+        self.user_label.bind("<Button-1>", self.toggle_logout_button)
+        
+        self.logout_button = tk.Button(self, text="Log Out", command=self.controller.logout)
+
+        # buttons showing book now and book at 12:30
+
+    def toggle_logout_button(self, event):
+        if self.logout_button_visible:
+            self.logout_button.pack_forget()
+            self.logout_button_visible = False
+        else:
+            self.logout_button.pack()
+            self.logout_button_visible = True
+        
+    def update_content(self):
+        if self.controller.login_status:
+            user_email = self.controller.user_email
+            self.user_label.config(text= f"Logged in as {user_email}")
+
+        # Ensure the logout button is not visible when the screen is first loaded.
+        # self.logout_button.pack_forget()
+        # self.logout_button_visible = False
 
 
 class scrapeScreen(tk.Frame):

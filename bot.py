@@ -40,6 +40,26 @@ def printDic(dic):
         print(key, ":", dic[key])
 
 
+# def test_login(email: str, password: str):
+#     payload = {
+#         data["Email Field Name"] : email,
+#         data["Password Field Name"] : password    
+#     }
+    
+#     with requests.Session() as sess:
+#         try:
+#             login = sess.post(url=data["Login URL"], data=payload)
+#             if login.status_code == 200:
+#                 for cookie in login.cookies:
+#                     if cookie.key == "PMAuth":
+#                         return True
+#                 return False # login values were wrong
+#             else:
+#                 return False # login did not reach server properly
+#         except:
+#             print("failed to get login page")
+
+
 def test_login(email: str, password: str):
     payload = {
         data["Email Field Name"] : email,
@@ -48,11 +68,13 @@ def test_login(email: str, password: str):
     
     with requests.Session() as sess:
         try:
-            login = sess.get(url=data["Login URL"], data=payload)
+            login = sess.post(url=data["Login URL"], data=payload)
             if login.status_code == 200:
-                return True
+                if "PMAuth" in sess.cookies:
+                    return True
+                return False # login values were wrong. Could refactor this to have 1 false return
             else:
-                return False
+                return False # login did not reach server properly.
         except:
             print("failed to get login page")
 
@@ -189,8 +211,6 @@ def main():
     if not successfulHolds:
         print("No open bookings")
         return
-    
-    
 
     for success in successfulHolds:
         # We're just going to assume that the checkout will occur at this point. Surely nothing will fail...
