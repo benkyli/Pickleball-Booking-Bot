@@ -157,35 +157,32 @@ class MainScreen(tk.Frame):
         time_frame = tk.Frame(body_frame)
         time_frame.pack(pady=10)
 
-        times = [f"{hour}:30" for hour in range(5,24)]
+        self.times = [f"{hour}:30" for hour in range(5,24)]
         self.start_time = tk.StringVar(time_frame) # may want to give default val. Prob shouldn't though
         self.end_time = tk.StringVar(time_frame)
 
-        start_time_menu = tk.OptionMenu(time_frame, self.start_time, *times)
-        end_time_menu = tk.OptionMenu(time_frame, self.end_time, *times) # might want to make it check the start time value and only do values after that.
-        # need to pack these
+        start_time_menu = tk.OptionMenu(time_frame, self.start_time, *self.times)
+        start_time_menu.pack(side="left")
+        tk.Label(time_frame, text="Start Time").pack(side="left", padx=5)
+
+        end_time_menu = tk.OptionMenu(time_frame, self.end_time, *self.times) # might want to make it check the start time value and only do values after that.
+        end_time_menu.pack(side="left")
+        tk.Label(time_frame, text="End Time").pack(side="right", padx=5)
+
+        self.time_button = tk.Button(body_frame, text="Confirm Time Range", command=self.show_time_range)
+        self.time_button.pack()
+
+        self.time_label = tk.Label(body_frame, text="", fg="green")
+        self.time_label.pack(pady=5)
 
         # submit button
-        submit_button = tk.Button(body_frame, text="Try Booking", command=self.scrape)
-        # also pack this
+        submit_button_frame = tk.Frame(body_frame)
+        submit_button_frame.pack(fill="x", pady=25)
 
-        
-        
+        submit_button = tk.Button(submit_button_frame, text="Try Booking", command=self.scrape, relief="raised", borderwidth=3, bg="green", fg="white", padx=8, pady=5)
+        submit_button.pack(side="right")
 
-            
-
-
-
-        # submit button
-
-
-    def show_selected_date(self):
-        """
-        Gets the selected date from the calendar and displays it.
-        """
-        selected_date = self.calendar.selection_get()
-        self.date_label.config(text=f"Selected date: {selected_date}")
-
+    # need to implement scrape function for submit button
 
     def toggle_logout_button(self, event):
         if self.logout_button_visible:
@@ -194,16 +191,39 @@ class MainScreen(tk.Frame):
         else:
             self.logout_button.pack(anchor="e")
             self.logout_button_visible = True
+
+    def show_selected_date(self):
+        selected_date = self.calendar.selection_get()
+        self.date_label.config(text=f"Selected date: {selected_date}")
         
     def update_content(self):
         if self.controller.login_status:
             user_email = self.controller.user_email
             self.user_label.config(text= f"Logged in as {user_email}")
+    
+    def show_time_range(self):
+        start_time = self.start_time.get()
+        end_time = self.end_time.get()
+
+        if start_time and end_time and self.valid_time_range(start_time, end_time):
+            self.time_label.config(text=f"Selected Time Range: {start_time} - {end_time}")
+        else:
+            messagebox.showerror("Invalid Time Range", "Please input a start time earlier than the end time")
+
+    def valid_time_range(self, start_time, end_time):
+        start_index = self.times.index(start_time)
+        end_index = self.times.index(end_time)
+        
+        if end_index > start_index:
+            return True
+        else:
+            return False
 
     def scrape(self):
         # get calendar val, start time val, end time val. Make sure that they've been given values. If not, send an error.
         pass
         # If all good, give params to the bot function.
+        # Go to new page?
 
 class scrapeScreen(tk.Frame):
     def __init__(self, parent, controller):
