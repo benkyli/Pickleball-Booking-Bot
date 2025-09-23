@@ -39,27 +39,6 @@ def printDic(dic):
     for key in dic:
         print(key, ":", dic[key])
 
-
-# def test_login(email: str, password: str):
-#     payload = {
-#         data["Email Field Name"] : email,
-#         data["Password Field Name"] : password    
-#     }
-    
-#     with requests.Session() as sess:
-#         try:
-#             login = sess.post(url=data["Login URL"], data=payload)
-#             if login.status_code == 200:
-#                 for cookie in login.cookies:
-#                     if cookie.key == "PMAuth":
-#                         return True
-#                 return False # login values were wrong
-#             else:
-#                 return False # login did not reach server properly
-#         except:
-#             print("failed to get login page")
-
-
 def test_login(email: str, password: str):
     payload = {
         data["Email Field Name"] : email,

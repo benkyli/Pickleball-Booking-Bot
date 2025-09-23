@@ -6,6 +6,9 @@ All we need is the eventId, which is the classId in the information page for the
 User: bogejib211@colimarl.com
 P: TestingStuff69!
 
+  "Krilin Email": "kipisa5313@baxidy.com",
+    "pw": "StuffMeDaddyXDD69!",
+
 [Log in using requests in python](https://stackoverflow.com/questions/11892729/how-to-log-in-to-a-website-using-pythons-requests-module)
 [Another example, specifically regarding __RequestVerificationToken](https://stackoverflow.com/questions/51430765/login-to-website-using-python-and-requestverificationtoken)
 

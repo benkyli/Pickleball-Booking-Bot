@@ -2,13 +2,15 @@ import tkinter as tk
 from tkinter import messagebox
 from bot import test_login
 import json
+from datetime import date
+from tkcalendar import Calendar
 
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
         # set window params and login status
         self.title("Pickleball Bot")
-        self.geometry("500x500")
+        self.geometry("600x600")
         self.user_email = None
         self.login_status = self.try_credentials()
         
@@ -28,7 +30,7 @@ class App(tk.Tk):
         if self.login_status:
             self.show_frame("MainScreen")
         else:
-            self.show_frame("LoginPage")
+            self.show_frame("LoginScreen")
 
     def show_frame(self, page_name):
         frame = self.frames[page_name]
@@ -101,7 +103,7 @@ class LoginScreen(tk.Frame):
             self.controller.show_frame("MainScreen")
         
         else:
-            tk.messagebox.showerror("Login Fail", f"Login failed. Please try again.")
+            messagebox.showerror("Login Fail", f"Login failed. Please try again.")
 
     # just added to avoid missing method errors. Would make sense to have this frame inherit from a custom frame with an abstract method for this.
     def update_content(self):
@@ -117,27 +119,80 @@ class MainScreen(tk.Frame):
         self.controller = controller
         self.logout_button_visible = False
 
-        # header section showing tab purpose and login info
+        # header section showing login info
         header_frame = tk.Frame(self)
-        header_frame.pack(side="top", fill="x")
+        header_frame.pack(side="top", fill="x", padx=5, pady=5)
 
-        tab_label = tk.Label(header_frame, text="Choose when you want to book the court")
-        tab_label.pack(side="left")
+        user_dropdown_frame = tk.Frame(header_frame, borderwidth=1, relief="solid")
+        user_dropdown_frame.pack(side="right", padx=5)
 
-        self.user_label = tk.Label(header_frame, text="", cursor="hand2")
-        self.user_label.pack(side="right")
+        self.user_label = tk.Label(user_dropdown_frame, text="", cursor="hand2")
+        self.user_label.pack()
         self.user_label.bind("<Button-1>", self.toggle_logout_button)
         
-        self.logout_button = tk.Button(self, text="Log Out", command=self.controller.logout)
+        self.logout_button = tk.Button(user_dropdown_frame, text="Log Out", command=self.controller.logout)
 
-        # buttons showing book now and book at 12:30
+        # Body section
+        body_frame = tk.Frame(self)
+        body_frame.pack(pady=20)
+
+        body_label = tk.Label(body_frame, text="Input your desired date and court time range")
+        body_label.pack(pady=5)
+        
+        # Date input
+        date_frame = tk.Frame(body_frame)
+        date_frame.pack(pady=10)
+        
+        today = date.today()
+        self.calendar = Calendar(date_frame, selectmode="day", mindate=today)
+        self.calendar.pack()
+
+        self.date_button = tk.Button(date_frame, text="Confirm Selected Date", command=self.show_selected_date)
+        self.date_button.pack(pady=5)
+
+        self.date_label = tk.Label(date_frame, text="", fg="green")
+        self.date_label.pack()
+
+        # Time range input
+        time_frame = tk.Frame(body_frame)
+        time_frame.pack(pady=10)
+
+        times = [f"{hour}:30" for hour in range(5,24)]
+        self.start_time = tk.StringVar(time_frame) # may want to give default val. Prob shouldn't though
+        self.end_time = tk.StringVar(time_frame)
+
+        start_time_menu = tk.OptionMenu(time_frame, self.start_time, *times)
+        end_time_menu = tk.OptionMenu(time_frame, self.end_time, *times) # might want to make it check the start time value and only do values after that.
+        # need to pack these
+
+        # submit button
+        submit_button = tk.Button(body_frame, text="Try Booking", command=self.scrape)
+        # also pack this
+
+        
+        
+
+            
+
+
+
+        # submit button
+
+
+    def show_selected_date(self):
+        """
+        Gets the selected date from the calendar and displays it.
+        """
+        selected_date = self.calendar.selection_get()
+        self.date_label.config(text=f"Selected date: {selected_date}")
+
 
     def toggle_logout_button(self, event):
         if self.logout_button_visible:
             self.logout_button.pack_forget()
             self.logout_button_visible = False
         else:
-            self.logout_button.pack()
+            self.logout_button.pack(anchor="e")
             self.logout_button_visible = True
         
     def update_content(self):
@@ -145,16 +200,14 @@ class MainScreen(tk.Frame):
             user_email = self.controller.user_email
             self.user_label.config(text= f"Logged in as {user_email}")
 
-        # Ensure the logout button is not visible when the screen is first loaded.
-        # self.logout_button.pack_forget()
-        # self.logout_button_visible = False
-
+    def scrape(self):
+        # get calendar val, start time val, end time val. Make sure that they've been given values. If not, send an error.
+        pass
+        # If all good, give params to the bot function.
 
 class scrapeScreen(tk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
-        # have fields for date, time range.
-        # have option to do now or at specific time. Maybe have a little highlight that explains the diff.
         
 if __name__ == "__main__":
     app = App()
