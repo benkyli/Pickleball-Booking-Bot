@@ -11,6 +11,8 @@ import aiohttp
 import re
 import time
 
+# NOTE: When I started working on the ui, I changed to snake case to fit Python naming conventions better. However, I didn't want to change all the variable names in this file, so I just did the function names.
+
 with open('data.json') as jsonData:
     data = json.load(jsonData)
 
@@ -24,20 +26,8 @@ headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:142.0) Gecko/20100101 Firefox/142.0'
 }
 
-# Prepare date and time values
-year = "2025"
-month = "09"
-day = "16"
-startTime = "12:30"
-endTime = "15:30"
-
 def create_datetime(year: str, month: str, day: str, time="00:00"):
     return f"{year}-{month}-{day}T{time}:00.000Z"
-
-# Definitely delete later
-def printDic(dic):
-    for key in dic:
-        print(key, ":", dic[key])
 
 def test_login(email: str, password: str):
     payload = {
@@ -57,8 +47,7 @@ def test_login(email: str, password: str):
         except:
             print("failed to get login page")
 
-
-def get_event_urls():
+def get_event_urls(year: str, month: str, day: str, startTime: int, endTime: int):
     # Set date-time parameters in dictionary
     date = create_datetime(year=year, month=month, day=day, time="00:00") # time doesn't matter for date parameter
     
@@ -105,10 +94,7 @@ def check_spot_value(html):
     else:
         print("uh oh no script found")
 
-'''
-Combine these functions more easily. Make it more robust, although, probably not necessary.
-Then test the start time one. Yeagh, 
-'''
+# I could combine these functions, but I'm not gonna use this for anything else so I'll leave it hard coded like this.
 
 def check_start_time(html):
     soup = BeautifulSoup(html, "html.parser")
@@ -138,7 +124,7 @@ async def get(sess: aiohttp.ClientSession, url: str):
                     return [startTime, resp.url]
                 # This will return None if the page was gotten successfully but the booking wasn't there
             else:
-                print(resp.status, "failed: ", resp.reason)
+                print(resp.status, "failed: ", resp.reason, f"URL: {url}")
 
     except Exception as e:
         print(e)
@@ -147,13 +133,12 @@ async def spam_urls(urls, timeSlotsAmount):
     async with aiohttp.ClientSession(headers=headers) as sess:
         login = await sess.post(url=data["Login URL"], data=loginPayload)  # should probably have error handling here
    
-        # wanna repeat this a few times at 12:30
         successfulHolds = set()
         successfulTimeSlots = set()
-        if login:
+        if login: # I wonder if the login times out if you just keep the loop going for hours.
             for i in range(1):
-                # Get all urls that we successfully held and save them
                 results = await asyncio.gather(*[get(sess=sess, url=url) for url in urls])
+                # Get all urls that we successfully held and save them
                 for success in results:
                     if success != None:
                         bookingTime = success[0]
@@ -161,13 +146,11 @@ async def spam_urls(urls, timeSlotsAmount):
                         if bookingTime not in successfulTimeSlots and url not in successfulHolds:
                             successfulTimeSlots.add(bookingTime)
                             successfulHolds.add(url)
-                            print(f"time got: {bookingTime}")
                             # may also want to remove url from urls so we stop looping them. Also might want to add time check earlier so we skip some pages.
 
                 if len(successfulTimeSlots) == timeSlotsAmount:
                     break
                         
-
         # just store cookies and urls
         return {"cookies": sess.cookie_jar,
                 "urls" : successfulHolds,
@@ -175,12 +158,15 @@ async def spam_urls(urls, timeSlotsAmount):
 
 
 # Spam the pages
-def main():
-    eventURLs = get_event_urls()
-    startTimeHour = int(startTime[0:2]) # just the first 2 characters have the hour time.
-    endTimeHour = int(endTime[0:2])
+def site_scrape(date, start_time, end_time):
+    year = date.year
+    month = f"{date.month:02d}" # make it leading zero
+    day = f"{date.day:02d}"
+    startTimeHour = int(start_time[0:2]) # just the first 2 characters have the hour time.
+    endTimeHour = int(end_time[0:2])
     timeSlotsAmount = endTimeHour - startTimeHour
 
+    eventURLs = get_event_urls(year=year, month=month, day=day, startTime=start_time, endTime=end_time)
     results = asyncio.run(spam_urls(urls=eventURLs, timeSlotsAmount=timeSlotsAmount))
     
     cookieJar = results["cookies"]
@@ -222,15 +208,14 @@ def main():
 
         wait.until(EC.frame_to_be_available_and_switch_to_it((By.CLASS_NAME, "online-store")))
 
-        # simulate human movement and submit
+        # simulate human movement and submit to book court
         time.sleep(1)
         actions = ActionChains(driver)
         checkoutButton = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button.process-now")))
         actions.move_to_element(checkoutButton).perform()
         time.sleep(1.2)
         checkoutButton.click()
-            
-    # Then make it user friendly.
 
-if __name__ == "__main__":
-    main()
+# Need to make it so that the confirm occurs during the loop, but actually may not be necessary.
+# Should return which courts were gotten. 
+# make it so that it's a 12:30 check. Figure that out.

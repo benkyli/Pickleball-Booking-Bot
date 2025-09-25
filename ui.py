@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import messagebox
-from bot import test_login
+from bot import test_login, site_scrape
 import json
 from datetime import date
 from tkcalendar import Calendar
@@ -8,6 +8,7 @@ from tkcalendar import Calendar
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
+
         # set window params and login status
         self.title("Pickleball Bot")
         self.geometry("600x600")
@@ -109,10 +110,6 @@ class LoginScreen(tk.Frame):
     def update_content(self):
         pass
 
-    # add handler to show password
-
-
-
 class MainScreen(tk.Frame): 
     def __init__(self, parent, controller): # will need to **args this.
         super().__init__(parent)
@@ -157,7 +154,7 @@ class MainScreen(tk.Frame):
         time_frame = tk.Frame(body_frame)
         time_frame.pack(pady=10)
 
-        self.times = [f"{hour}:30" for hour in range(5,24)]
+        self.times = [f"{hour:02d}:30" for hour in range(7,24)]
         self.start_time = tk.StringVar(time_frame) # may want to give default val. Prob shouldn't though
         self.end_time = tk.StringVar(time_frame)
 
@@ -182,8 +179,6 @@ class MainScreen(tk.Frame):
         submit_button = tk.Button(submit_button_frame, text="Try Booking", command=self.scrape, relief="raised", borderwidth=3, bg="green", fg="white", padx=8, pady=5)
         submit_button.pack(side="right")
 
-    # need to implement scrape function for submit button
-
     def toggle_logout_button(self, event):
         if self.logout_button_visible:
             self.logout_button.pack_forget()
@@ -207,6 +202,7 @@ class MainScreen(tk.Frame):
 
         if start_time and end_time and self.valid_time_range(start_time, end_time):
             self.time_label.config(text=f"Selected Time Range: {start_time} - {end_time}")
+           
         else:
             messagebox.showerror("Invalid Time Range", "Please input a start time earlier than the end time")
 
@@ -220,10 +216,19 @@ class MainScreen(tk.Frame):
             return False
 
     def scrape(self):
-        # get calendar val, start time val, end time val. Make sure that they've been given values. If not, send an error.
-        pass
-        # If all good, give params to the bot function.
-        # Go to new page?
+        date = self.calendar.selection_get()
+        start_time = self.start_time.get()
+        end_time = self.end_time.get()
+
+        if date and start_time and end_time and self.valid_time_range(start_time, end_time):
+            # give to bot function; have it return something to show which ones were gotten.
+            site_scrape(date, start_time, end_time)
+
+            # Should show a screen showing which courts were gotten and give a link to the schedule to tab to show the user their bookings.
+            
+        else:
+            messagebox.showerror("Invalid Inputs", "Please ensure you have selected a date and valid time range")
+    
 
 class scrapeScreen(tk.Frame):
     def __init__(self, parent, controller):
