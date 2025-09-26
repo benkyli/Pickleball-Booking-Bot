@@ -10,6 +10,7 @@ import asyncio
 import aiohttp
 import re
 import time
+import datetime
 
 # NOTE: When I started working on the ui, I changed to snake case to fit Python naming conventions better. However, I didn't want to change all the variable names in this file, so I just did the function names.
 
@@ -136,7 +137,7 @@ async def spam_urls(urls, timeSlotsAmount):
         successfulHolds = set()
         successfulTimeSlots = set()
         if login: # I wonder if the login times out if you just keep the loop going for hours.
-            for i in range(1):
+            for _ in range(20):
                 results = await asyncio.gather(*[get(sess=sess, url=url) for url in urls])
                 # Get all urls that we successfully held and save them
                 for success in results:
@@ -167,10 +168,18 @@ def site_scrape(date, start_time, end_time):
     timeSlotsAmount = endTimeHour - startTimeHour
 
     eventURLs = get_event_urls(year=year, month=month, day=day, startTime=start_time, endTime=end_time)
-    results = asyncio.run(spam_urls(urls=eventURLs, timeSlotsAmount=timeSlotsAmount))
-    
-    cookieJar = results["cookies"]
-    successfulHolds = results["urls"]
+
+    twelve_thirty = datetime.time(12, 30)
+    twelve_thirty_one = datetime.time(12, 31)
+
+    while datetime.datetime.now().time() < twelve_thirty_one:
+        if datetime.datetime.now().time() > twelve_thirty:
+            results = asyncio.run(spam_urls(urls=eventURLs, timeSlotsAmount=timeSlotsAmount))
+            break
+            
+    if results:
+        cookieJar = results["cookies"]
+        successfulHolds = results["urls"]
 
     # Have a tracker for time slots. probably just max time - min time (hour), then use those as indices. Then when checking times, compare the lower time slot hour and minus to the lowest start time.
     if not successfulHolds:
