@@ -4,6 +4,7 @@ from bot import test_login, site_scrape
 import json
 from datetime import date
 from tkcalendar import Calendar
+import webbrowser
 
 class App(tk.Tk):
     def __init__(self):
@@ -11,7 +12,7 @@ class App(tk.Tk):
 
         # set window params and login status
         self.title("Pickleball Bot")
-        self.geometry("600x600")
+        self.geometry("750x750")
         self.user_email = None
         self.login_status = self.try_credentials()
         
@@ -179,6 +180,15 @@ class MainScreen(tk.Frame):
         submit_button = tk.Button(submit_button_frame, text="Try Booking", command=self.scrape, relief="raised", borderwidth=3, bg="green", fg="white", padx=8, pady=5)
         submit_button.pack(side="right")
 
+        # confirmation text and account schedule link
+     
+        self.in_progress_text = tk.Label(self, text="Bot waiting for 12:30", fg="red")
+
+        self.confirmation_text = tk.Label(self, text="", fg="green")
+      
+        self.profile_link = tk.Label(self, text="https://cityofhamilton.perfectmind.com/39117/MyProfile/Contact", fg="blue", cursor="hand2")
+        self.profile_link.bind("<Button-1>", self.open_link)
+
     def toggle_logout_button(self, event):
         if self.logout_button_visible:
             self.logout_button.pack_forget()
@@ -216,20 +226,28 @@ class MainScreen(tk.Frame):
             return False
 
     def scrape(self):
+        # Need to do this to show that the site is waiting
+        self.in_progress_text.pack()
+        self.master.update()
+        
         date = self.calendar.selection_get()
         start_time = self.start_time.get()
         end_time = self.end_time.get()
 
         if date and start_time and end_time and self.valid_time_range(start_time, end_time):
             # give to bot function; have it return something to show which ones were gotten.
-            site_scrape(date, start_time, end_time)
-
-            # Should show a screen showing which courts were gotten and give a link to the schedule to tab to show the user their bookings.
-            
+            scrape_successes = site_scrape(date, start_time, end_time)
+            if scrape_successes > 0:
+                self.in_progress_text.pack_forget()
+                self.confirmation_text.config(text=f"Time slots booked: {scrape_successes}\n Please check your bookings at the link below")
+                self.confirmation_text.pack()
+                self.profile_link.pack()
         else:
             messagebox.showerror("Invalid Inputs", "Please ensure you have selected a date and valid time range")
-    
 
+    def open_link(self):
+        webbrowser.open_new("https://cityofhamilton.perfectmind.com/39117/MyProfile/Contact")
+    
 class scrapeScreen(tk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)

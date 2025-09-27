@@ -169,14 +169,18 @@ def site_scrape(date, start_time, end_time):
 
     eventURLs = get_event_urls(year=year, month=month, day=day, startTime=start_time, endTime=end_time)
 
-    twelve_thirty = datetime.time(12, 30)
-    twelve_thirty_one = datetime.time(12, 31)
+    twelve_thirty = datetime.time(20, 36)
+    twelve_thirty_one = datetime.time(20, 37)
 
+    results = []
     while datetime.datetime.now().time() < twelve_thirty_one:
         if datetime.datetime.now().time() > twelve_thirty:
             results = asyncio.run(spam_urls(urls=eventURLs, timeSlotsAmount=timeSlotsAmount))
             break
+        time.sleep(1)
             
+    cookieJar = []
+    successfulHolds = []
     if results:
         cookieJar = results["cookies"]
         successfulHolds = results["urls"]
@@ -184,7 +188,7 @@ def site_scrape(date, start_time, end_time):
     # Have a tracker for time slots. probably just max time - min time (hour), then use those as indices. Then when checking times, compare the lower time slot hour and minus to the lowest start time.
     if not successfulHolds:
         print("No open bookings")
-        return
+        return False
 
     for success in successfulHolds:
         # We're just going to assume that the checkout will occur at this point. Surely nothing will fail...
@@ -224,6 +228,8 @@ def site_scrape(date, start_time, end_time):
         actions.move_to_element(checkoutButton).perform()
         time.sleep(1.2)
         checkoutButton.click()
+    
+    return len(successfulHolds)
 
 # Need to make it so that the confirm occurs during the loop, but actually may not be necessary.
 # Should return which courts were gotten. 
