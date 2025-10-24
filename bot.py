@@ -1,5 +1,4 @@
 import requests
-import json
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.support.wait import WebDriverWait
@@ -11,16 +10,12 @@ import aiohttp
 import re
 import time
 import datetime
+import data_manager
 
-# NOTE: When I started working on the ui, I changed to snake case to fit Python naming conventions better. However, I didn't want to change all the variable names in this file, so I just did the function names.
+# NOTE: When I started working on the ui, I changed the naming style to snake case to fit Python conventions better. However, I didn't want to change all the variable names in this file, so I just did the function names.
 
-with open('data.json') as jsonData:
-    data = json.load(jsonData)
-
-loginPayload = {
-    data["Email Field Name"] : data["User Email"],
-    data["Password Field Name"] : data["User Password"]    
-}
+# this loads the data that is shared with the ui app.
+data_manager.load_data()
 
 # Allows us to swap to selenium if necessary and may help against bot detection
 headers = {
@@ -32,13 +27,13 @@ def create_datetime(year: str, month: str, day: str, time="00:00"):
 
 def test_login(email: str, password: str):
     payload = {
-        data["Email Field Name"] : email,
-        data["Password Field Name"] : password    
+        data_manager.get_value("Email Field Name") : email,
+        data_manager.get_value("Password Field Name") : password    
     }
     
     with requests.Session() as sess:
         try:
-            login = sess.post(url=data["Login URL"], data=payload)
+            login = sess.post(url=data_manager.get_value("Login URL"), data=payload)
             if login.status_code == 200:
                 if "PMAuth" in sess.cookies:
                     return True
@@ -52,14 +47,14 @@ def get_event_urls(year: str, month: str, day: str, startTime: int, endTime: int
     # Set date-time parameters in dictionary
     date = create_datetime(year=year, month=month, day=day, time="00:00") # time doesn't matter for date parameter
     
-    dateTimeData = data["DateTime Payload"]
-    dateTimeData[data["Start Date Key"]] = date # start date and end date are the same because bookings are always taken 2 days in advance, so you don't get opportunities to do other days.
-    dateTimeData[data["End Date Key"]] = date
-    dateTimeData[data["Start Time Key"]] = create_datetime(year=year, month=month, day=day, time=startTime) # day doesn't matter for the time parameter
-    dateTimeData[data["End Time Key"]] = create_datetime(year=year, month=month, day=day, time=endTime)
+    dateTimeData = data_manager.get_value("DateTime Payload")
+    dateTimeData[data_manager.get_value("Start Date Key")] = date # start date and end date are the same because bookings are always taken 2 days in advance, so you don't get opportunities to do other days.
+    dateTimeData[data_manager.get_value("End Date Key")] = date
+    dateTimeData[data_manager.get_value("Start Time Key")] = create_datetime(year=year, month=month, day=day, time=startTime) # day doesn't matter for the time parameter
+    dateTimeData[data_manager.get_value("End Time Key")] = create_datetime(year=year, month=month, day=day, time=endTime)
 
     # Get the booking page
-    bookingPage = requests.post(url=data["Booking URL Updated"], data=dateTimeData)
+    bookingPage = requests.post(url=data_manager.get_value("Booking URL Updated"), data=dateTimeData)
     courts = bookingPage.json()["classes"]
 
     # Get event IDs and convert to urls
@@ -93,7 +88,7 @@ def check_spot_value(html):
         spots = re.search(spotsRegex, spotsScript.string).group(1)
         return spots
     else:
-        print("uh oh no script found")
+        print("uh oh no spot value found")
 
 # I could combine these functions, but I'm not gonna use this for anything else so I'll leave it hard coded like this.
 
@@ -111,7 +106,7 @@ def check_start_time(html):
         return int(startTimeString[:2]) + hourModifier
     
     else:
-        print("no script found")
+        print("no start time found")
 
 
 async def get(sess: aiohttp.ClientSession, url: str):
@@ -131,13 +126,19 @@ async def get(sess: aiohttp.ClientSession, url: str):
         print(e)
     
 async def spam_urls(urls, timeSlotsAmount):
+    loginPayload = {
+        data_manager.get_value("Email Field Name") : data_manager.get_value("User Email"),
+        data_manager.get_value("Password Field Name") : data_manager.get_value("User Password")    
+    }
+    
     async with aiohttp.ClientSession(headers=headers) as sess:
-        login = await sess.post(url=data["Login URL"], data=loginPayload)  # should probably have error handling here
+        login = await sess.post(url=data_manager.get_value("Login URL"), data=loginPayload)  # should probably have error handling here
    
         successfulHolds = set()
         successfulTimeSlots = set()
         if login: # I wonder if the login times out if you just keep the loop going for hours.
-            for _ in range(20):
+            for i in range(20):
+                print(i)
                 results = await asyncio.gather(*[get(sess=sess, url=url) for url in urls])
                 # Get all urls that we successfully held and save them
                 for success in results:
@@ -169,15 +170,17 @@ def site_scrape(date, start_time, end_time):
 
     eventURLs = get_event_urls(year=year, month=month, day=day, startTime=start_time, endTime=end_time)
 
-    twelve_thirty = datetime.time(20, 36)
-    twelve_thirty_one = datetime.time(20, 37)
+    twelve_thirty = datetime.time(12, 30)
+    twelve_thirty_one = datetime.time(12, 31)
 
-    results = []
-    while datetime.datetime.now().time() < twelve_thirty_one:
-        if datetime.datetime.now().time() > twelve_thirty:
-            results = asyncio.run(spam_urls(urls=eventURLs, timeSlotsAmount=timeSlotsAmount))
-            break
-        time.sleep(1)
+    results = asyncio.run(spam_urls(urls=eventURLs, timeSlotsAmount=timeSlotsAmount))
+
+    # results = []
+    # while datetime.datetime.now().time() < twelve_thirty_one:
+    #     if datetime.datetime.now().time() > twelve_thirty:
+    #         results = asyncio.run(spam_urls(urls=eventURLs, timeSlotsAmount=timeSlotsAmount))
+    #         break
+    #     time.sleep(1)
             
     cookieJar = []
     successfulHolds = []
@@ -199,7 +202,7 @@ def site_scrape(date, start_time, end_time):
         wait = WebDriverWait(driver, 25)
        
         # Update cookies
-        driver.get(url=data["Booking Page URL"])
+        driver.get(url=data_manager.get_value("Booking Page URL"))
         driver.delete_all_cookies()
 
         for cookie in cookieJar:
@@ -230,7 +233,3 @@ def site_scrape(date, start_time, end_time):
         checkoutButton.click()
     
     return len(successfulHolds)
-
-# Need to make it so that the confirm occurs during the loop, but actually may not be necessary.
-# Should return which courts were gotten. 
-# make it so that it's a 12:30 check. Figure that out.

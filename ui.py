@@ -1,14 +1,17 @@
 import tkinter as tk
 from tkinter import messagebox
 from bot import test_login, site_scrape
-import json
 from datetime import date
 from tkcalendar import Calendar
 import webbrowser
+import data_manager
+
 
 class App(tk.Tk):
-    def __init__(self):
+    def __init__(self, data_handler):
         super().__init__()
+        # set data variables
+        self.data_handler = data_handler
 
         # set window params and login status
         self.title("Pickleball Bot")
@@ -40,10 +43,8 @@ class App(tk.Tk):
         frame.update_content()
 
     def try_credentials(self):
-        with open("data.json", "r") as f:
-            data = json.load(f)
-            email = data["User Email"]
-            password = data["User Password"]
+        email = self.data_handler.get_value("User Email")
+        password = self.data_handler.get_value("User Password")
 
         if email and password and test_login(email=email, password=password):  
             self.user_email = email
@@ -55,17 +56,12 @@ class App(tk.Tk):
         self.user_email = None
         self.login_status = False
 
-        with open("data.json") as f:
-            data = json.load(f)
-            data["User Email"] = ""
-            data["User Password"] = ""
-            
-        with open("data.json", "w") as f:
-            json.dump(data, f)   
-
+        self.data_handler.set_value("User Email", "") 
+        self.data_handler.set_value("User Password", "")
+        self.data_handler.save_data()
+             
         self.show_frame("LoginScreen")
       
-
 class LoginScreen(tk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
@@ -91,15 +87,11 @@ class LoginScreen(tk.Frame):
 
         login_works = test_login(email=email, password=password)
         if login_works:
-            with open("data.json") as f:
-                data = json.load(f)
-                data["User Email"] = email
-                data["User Password"] = password
+            self.controller.data_handler.set_value("User Email", email)
+            self.controller.data_handler.set_value("User Password", password)
+            self.controller.data_handler.save_data()
 
-            with open("data.json", "w") as f:
-                json.dump(data, f)
-
-            # update user email attribute for the controller 
+            # update user email for the controller 
             self.controller.user_email = email
             self.controller.login_status = True
             self.controller.show_frame("MainScreen")
@@ -181,7 +173,6 @@ class MainScreen(tk.Frame):
         submit_button.pack(side="right")
 
         # confirmation text and account schedule link
-     
         self.in_progress_text = tk.Label(self, text="Bot waiting for 12:30", fg="red")
 
         self.confirmation_text = tk.Label(self, text="", fg="green")
@@ -226,16 +217,16 @@ class MainScreen(tk.Frame):
             return False
 
     def scrape(self):
-        # Need to do this to show that the site is waiting
+        # Need to do this to show that the bot is waiting.
         self.in_progress_text.pack()
         self.master.update()
-        
+
+        # The bot will ping the site when it's 12:30
         date = self.calendar.selection_get()
         start_time = self.start_time.get()
         end_time = self.end_time.get()
 
         if date and start_time and end_time and self.valid_time_range(start_time, end_time):
-            # give to bot function; have it return something to show which ones were gotten.
             scrape_successes = site_scrape(date, start_time, end_time)
             if scrape_successes > 0:
                 self.in_progress_text.pack_forget()
@@ -247,11 +238,11 @@ class MainScreen(tk.Frame):
 
     def open_link(self):
         webbrowser.open_new("https://cityofhamilton.perfectmind.com/39117/MyProfile/Contact")
-    
-class scrapeScreen(tk.Frame):
-    def __init__(self, parent, controller):
-        super().__init__(parent)
-        
+
 if __name__ == "__main__":
-    app = App()
-    app.mainloop()
+    data_manager.load_data()
+    if data_manager.data_loaded():
+        app = App(data_manager)
+        app.mainloop()
+    else:
+        print("no data file given with program")
