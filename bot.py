@@ -137,8 +137,8 @@ async def spam_urls(urls, timeSlotsAmount):
         successfulHolds = set()
         successfulTimeSlots = set()
         if login: # I wonder if the login times out if you just keep the loop going for hours.
+            print("spamming links started")
             for i in range(20):
-                print(i)
                 results = await asyncio.gather(*[get(sess=sess, url=url) for url in urls])
                 # Get all urls that we successfully held and save them
                 for success in results:
@@ -160,7 +160,7 @@ async def spam_urls(urls, timeSlotsAmount):
 
 
 # Spam the pages
-def site_scrape(date, start_time, end_time):
+def site_scrape(date, start_time, end_time, book_now=False):
     year = date.year
     month = f"{date.month:02d}" # make it leading zero
     day = f"{date.day:02d}"
@@ -170,18 +170,20 @@ def site_scrape(date, start_time, end_time):
 
     eventURLs = get_event_urls(year=year, month=month, day=day, startTime=start_time, endTime=end_time)
 
+    # twelve thirty time checks.
     twelve_thirty = datetime.time(12, 30)
     twelve_thirty_one = datetime.time(12, 31)
 
-    results = asyncio.run(spam_urls(urls=eventURLs, timeSlotsAmount=timeSlotsAmount))
-
-    # results = []
-    # while datetime.datetime.now().time() < twelve_thirty_one:
-    #     if datetime.datetime.now().time() > twelve_thirty:
-    #         results = asyncio.run(spam_urls(urls=eventURLs, timeSlotsAmount=timeSlotsAmount))
-    #         break
-    #     time.sleep(1)
-            
+    results = []
+    if book_now:
+        results = asyncio.run(spam_urls(urls=eventURLs, timeSlotsAmount=timeSlotsAmount))
+    else:
+        while True: # seems a little sketchy, but whatever.
+            if datetime.datetime.now().time() > twelve_thirty and datetime.datetime.now().time() < twelve_thirty_one:
+                results = asyncio.run(spam_urls(urls=eventURLs, timeSlotsAmount=timeSlotsAmount))
+                break
+            time.sleep(1)
+    
     cookieJar = []
     successfulHolds = []
     if results:
@@ -197,7 +199,7 @@ def site_scrape(date, start_time, end_time):
         # We're just going to assume that the checkout will occur at this point. Surely nothing will fail...
 
         # Set up driver
-        url = str(success) # string conversion is done here to save time during the request spamming
+        url = str(success) 
         driver = webdriver.Firefox()
         wait = WebDriverWait(driver, 25)
        

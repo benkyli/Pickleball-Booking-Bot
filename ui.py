@@ -5,6 +5,7 @@ from datetime import date
 from tkcalendar import Calendar
 import webbrowser
 import data_manager
+from tktooltip import ToolTip
 
 
 class App(tk.Tk):
@@ -129,6 +130,18 @@ class MainScreen(tk.Frame):
         body_label = tk.Label(body_frame, text="Input your desired date and court time range")
         body_label.pack(pady=5)
         
+        # Book now button
+        booking_frame = tk.Frame(body_frame)
+        booking_frame.pack()
+
+        self.test_booking_toggled = False
+        self.toggle_button = tk.Button(booking_frame, text="Book Now Test", relief="raised", command=self.toggle_booking_button)
+        self.toggle_button.pack(side="left", padx=2)
+        
+        hovertool_button = tk.Button(booking_frame, text="?") # hoverable tooltip explaining why you should use the test button.
+        hovertool_button.pack(side="right")
+        ToolTip(hovertool_button, "The program will try to book the court immediately when this button is toggled. Otherwise, it will be booked at 12:30PM. This should be toggled on the first use of the program to ensure that the program works properly. If it does not, please contact the creator of this app.")
+        
         # Date input
         date_frame = tk.Frame(body_frame)
         date_frame.pack(pady=10)
@@ -173,12 +186,21 @@ class MainScreen(tk.Frame):
         submit_button.pack(side="right")
 
         # confirmation text and account schedule link
-        self.in_progress_text = tk.Label(self, text="Bot waiting for 12:30", fg="red")
+        self.in_progress_text = tk.Label(self, text="", fg="red")
 
         self.confirmation_text = tk.Label(self, text="", fg="green")
       
-        self.profile_link = tk.Label(self, text="https://cityofhamilton.perfectmind.com/39117/MyProfile/Contact", fg="blue", cursor="hand2")
+        self.profile_link = tk.Label(self, text="https://cityofhamilton.perfectmind.com/39117/MyProfile/Contact", fg="blue", font=("Helvetica", 12, "underline"), cursor="hand2")
         self.profile_link.bind("<Button-1>", self.open_link)
+
+    def toggle_booking_button(self):
+        self.test_booking_toggled = not self.test_booking_toggled
+
+        # this just makes the button look sunken if it was pressed
+        if self.test_booking_toggled:
+            self.toggle_button.config(relief="sunken")
+        else:
+            self.toggle_button.config(relief="raised")
 
     def toggle_logout_button(self, event):
         if self.logout_button_visible:
@@ -217,17 +239,28 @@ class MainScreen(tk.Frame):
             return False
 
     def scrape(self):
-        # Need to do this to show that the bot is waiting.
+        # unpack previously shown successes if multiple are done in the same session
+        self.confirmation_text.pack_forget()
+        self.profile_link.pack_forget()
+        self.master.update()
+
+        # Show if bot is waiting for 12:30
+        if not self.test_booking_toggled:
+            self.in_progress_text.config(text="Bot waiting for 12:30PM")
+        else:
+            self.in_progress_text.config(text="Please wait")
+
         self.in_progress_text.pack()
         self.master.update()
 
-        # The bot will ping the site when it's 12:30
+        # Prep time data and see if we are doing an immediate test booking.
         date = self.calendar.selection_get()
         start_time = self.start_time.get()
         end_time = self.end_time.get()
+        book_now = self.test_booking_toggled
 
         if date and start_time and end_time and self.valid_time_range(start_time, end_time):
-            scrape_successes = site_scrape(date, start_time, end_time)
+            scrape_successes = site_scrape(date, start_time, end_time, book_now)
             if scrape_successes > 0:
                 self.in_progress_text.pack_forget()
                 self.confirmation_text.config(text=f"Time slots booked: {scrape_successes}\n Please check your bookings at the link below")
