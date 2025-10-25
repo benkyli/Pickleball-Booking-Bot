@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 from selenium import webdriver
+from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
@@ -178,6 +179,7 @@ def site_scrape(date, start_time, end_time, book_now=False):
     if book_now:
         results = asyncio.run(spam_urls(urls=eventURLs, timeSlotsAmount=timeSlotsAmount))
     else:
+        print("waiting for 12:30PM")
         while True: # seems a little sketchy, but whatever.
             if datetime.datetime.now().time() > twelve_thirty and datetime.datetime.now().time() < twelve_thirty_one:
                 results = asyncio.run(spam_urls(urls=eventURLs, timeSlotsAmount=timeSlotsAmount))
@@ -200,7 +202,9 @@ def site_scrape(date, start_time, end_time, book_now=False):
 
         # Set up driver
         url = str(success) 
-        driver = webdriver.Firefox()
+        options = Options()
+        options.add_argument("--headless")
+        driver = webdriver.Firefox(options=options)
         wait = WebDriverWait(driver, 25)
        
         # Update cookies
