@@ -123,14 +123,14 @@ class MainScreen(tk.Frame):
         
         self.logout_button = tk.Button(user_dropdown_frame, text="Log Out", command=self.controller.logout)
 
-        # Body section
+        # body section
         body_frame = tk.Frame(self)
         body_frame.pack(pady=20)
 
         body_label = tk.Label(body_frame, text="Input your desired date and court time range")
         body_label.pack(pady=5)
         
-        # Book now button
+        # book now button
         booking_frame = tk.Frame(body_frame)
         booking_frame.pack()
 
@@ -142,7 +142,7 @@ class MainScreen(tk.Frame):
         hovertool_button.pack(side="right")
         ToolTip(hovertool_button, "The program will try to book the court immediately when this button is toggled. Otherwise, it will be booked at 12:30PM. This should be toggled on the first use of the program to ensure that the program works properly. If it does not, please contact the creator of this app.")
         
-        # Date input
+        # date input
         date_frame = tk.Frame(body_frame)
         date_frame.pack(pady=10)
         
@@ -156,7 +156,7 @@ class MainScreen(tk.Frame):
         self.date_label = tk.Label(date_frame, text="", fg="green")
         self.date_label.pack()
 
-        # Time range input
+        # time range input
         time_frame = tk.Frame(body_frame)
         time_frame.pack(pady=10)
 
@@ -269,7 +269,7 @@ class MainScreen(tk.Frame):
         else:
             messagebox.showerror("Invalid Inputs", "Please ensure you have selected a date and valid time range")
 
-    def open_link(self):
+    def open_link(self, event):
         webbrowser.open_new("https://cityofhamilton.perfectmind.com/39117/MyProfile/Contact")
 
 if __name__ == "__main__":

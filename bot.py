@@ -64,7 +64,6 @@ def get_event_urls(year: str, month: str, day: str, startTime: int, endTime: int
     
     return eventURLs
 
-# Might need to add the rest of things
 def reformat_selenium_cookies(seleniumCookies: list):
     cookies = {}
     for cookie in seleniumCookies:
@@ -139,7 +138,7 @@ async def spam_urls(urls, timeSlotsAmount):
         successfulTimeSlots = set()
         if login: # I wonder if the login times out if you just keep the loop going for hours.
             print("spamming links started")
-            for i in range(20):
+            for _ in range(20):
                 results = await asyncio.gather(*[get(sess=sess, url=url) for url in urls])
                 # Get all urls that we successfully held and save them
                 for success in results:
@@ -158,7 +157,6 @@ async def spam_urls(urls, timeSlotsAmount):
         return {"cookies": sess.cookie_jar,
                 "urls" : successfulHolds,
                 "timeSlots": successfulTimeSlots}
-
 
 # Spam the pages
 def site_scrape(date, start_time, end_time, book_now=False):
@@ -179,12 +177,12 @@ def site_scrape(date, start_time, end_time, book_now=False):
     if book_now:
         results = asyncio.run(spam_urls(urls=eventURLs, timeSlotsAmount=timeSlotsAmount))
     else:
-        print("waiting for 12:30PM")
+        print('waiting for 12:30PM. Do not worry if the program window says "Not Responding"')
         while True: # seems a little sketchy, but whatever.
             if datetime.datetime.now().time() > twelve_thirty and datetime.datetime.now().time() < twelve_thirty_one:
                 results = asyncio.run(spam_urls(urls=eventURLs, timeSlotsAmount=timeSlotsAmount))
                 break
-            time.sleep(1)
+            time.sleep(2)
     
     cookieJar = []
     successfulHolds = []
@@ -197,6 +195,7 @@ def site_scrape(date, start_time, end_time, book_now=False):
         print("No open bookings")
         return False
 
+    print(f'{len(successfulHolds)} timeslots were held and are being booked now. Do not worry if the program window says "Not Responding"')
     for success in successfulHolds:
         # We're just going to assume that the checkout will occur at this point. Surely nothing will fail...
 
