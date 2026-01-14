@@ -22,7 +22,7 @@ On the first launch of the app, files sometimes don't load properly, leading to 
 ## Learnings
 
 #### Requests and Sessions
-It was fascinating to see how websites monitor the user when they try to access the site; this allowed me to learn a lot about cookies and bot detection.
+It was fascinating to see how websites monitor the user when they try to access the site. I learned how cookies are checked between pages and how bots are detected using headers and Captchas.
 
 #### Tokens and Hidden Variables
 It turns out that you often carry a token with you between each page of a website. It was interesting to see how these tokens were used to track your activity. It was also somewhat frustrating to learn that some values are only visible in the embedded script attributes of a web page. This was important to know when trying to check for dynamically loaded values of available bookings.
